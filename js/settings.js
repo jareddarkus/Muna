@@ -1,6 +1,10 @@
 import { h, toast, debounce } from './util.js';
+import { VERSION } from './version.js';
+import { openUpdates, hasUnseenUpdate } from './updates.js';
+import { getTheme, setTheme } from './theme.js';
+import { permissionState, isEnabled, enablePush, disablePush, sendTest } from './push.js';
 import { icon } from './icons.js';
-import { avatar, openSheet, sheetHeader, closeButton, backButton, dangerButton } from './ui.js';
+import { avatar, openSheet, sheetHeader, closeButton, backButton, dangerButton, segmented, toggleSwitch } from './ui.js';
 import { compressAvatar } from './image.js';
 import {
   state, subscribe, updateProfile, setAvatar, signOut, friendsOf, incomingRequests, outgoingRequests, addFriendByUsername, acceptFriend,
@@ -24,19 +28,52 @@ export function mountSettings(root) {
     h('button', { type: 'button', class: 'btn primary', onClick: () => signOut() }, 'Sign in'));
   const friendsRow = row('users', 'Friends', () => (state.demo ? toast('Sign in with Google to add friends.') : openFriends()), friendsBadge);
   const groupsRow = row('user-plus', 'Groups', () => (state.demo ? toast('Sign in with Google to create groups.') : openGroups()));
+  const updDot = h('span', { class: 'upd-dot', hidden: !hasUnseenUpdate() });
+  const updBtn = h('button', { type: 'button', class: 'updates-btn', onClick: () => openUpdates(() => { updDot.hidden = true; }) }, 'Updates', h('span', { class: 'ver-chip' }, `v${VERSION}`), updDot);
+  const themeSeg = segmented([['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], getTheme(), (v) => setTheme(v));
+
+  // notifications
+  const notifNote = h('p', { class: 'hint tight' });
+  const notifSwitch = toggleSwitch(false, async (on, api) => {
+    if (state.demo) { toast('Sign in with Google to use notifications.'); return; }
+    api.el.disabled = true;
+    try { on ? await enablePush() : await disablePush(); api.set(on); toast(on ? 'Notifications are on' : 'Notifications are off'); }
+    catch (e) { fail(e); }
+    api.el.disabled = false; paintNotif();
+  });
+  const testBtn = h('button', { type: 'button', class: 'btn small', onClick: async () => {
+    testBtn.disabled = true;
+    try { const n = await sendTest(); toast(n ? 'Sent \u2014 it should arrive in a moment' : 'No device is registered yet'); } catch (e) { fail(e); }
+    testBtn.disabled = false;
+  } }, 'Send a test');
+  async function paintNotif() {
+    const st = permissionState();
+    const blocked = st === 'unsupported' || st === 'needs-install' || st === 'denied';
+    notifSwitch.el.disabled = blocked && !state.demo;
+    const on = !blocked && (await isEnabled());
+    notifSwitch.set(on);
+    testBtn.hidden = !on;
+    notifNote.textContent = state.demo ? 'Sign in with Google to get reminders.'
+      : st === 'needs-install' ? 'On iPhone, first add Muna to your Home Screen (Share \u2192 Add to Home Screen) and open it from there.'
+      : st === 'unsupported' ? 'This browser doesn\u2019t support notifications.'
+      : st === 'denied' ? 'Blocked. Allow notifications for Muna in your browser or phone settings.'
+      : on ? 'You\u2019ll get a reminder for habits that have one, if they\u2019re not done yet.' : 'Allow notifications, then set a reminder time on any habit.';
+  }
   const out = dangerButton('Sign out', 'Tap again to sign out', () => signOut(), 'block');
 
   function row(ic, label, fn, extra) {
     return h('button', { type: 'button', class: 'list-row', onClick: fn }, h('span', { class: 'lr-ic' }, icon(ic, { size: 20 })), h('span', { class: 'lr-label' }, label), extra, icon('chevron-right', { size: 20 }));
   }
 
-  root.append(h('header', { class: 'top' }, h('div', {}, h('h1', {}, 'Settings'), h('p', { class: 'date' }, 'Profile & friends'))),
+  root.append(h('header', { class: 'top' }, h('div', {}, h('h1', {}, 'Settings'), h('p', { class: 'date' }, 'Profile & friends')), updBtn),
     demoBanner,
     h('section', { class: 'card profile-card' }, camera, file, h('p', { class: 'hint center' }, 'Tap to change your photo')),
     h('section', { class: 'card fields' },
       h('label', { class: 'field' }, h('span', {}, 'Name'), nameInput),
       h('label', { class: 'field' }, h('span', {}, 'Username'), h('div', { class: 'at' }, h('i', {}, '@'), userInput)), err, saveBtn),
     h('section', { class: 'card rows' }, friendsRow, groupsRow),
+    h('section', { class: 'card' }, h('h3', { class: 'card-title' }, 'Appearance'), themeSeg.el),
+    h('section', { class: 'card' }, h('div', { class: 'card-row' }, h('h3', { class: 'card-title tight' }, 'Notifications'), notifSwitch.el), notifNote, h('div', { class: 'test-row' }, testBtn)),
     h('div', { class: 'foot-actions' }, out),
     h('p', { class: 'colophon' }, 'Muna · icons by Tabler'));
 
@@ -75,7 +112,8 @@ export function mountSettings(root) {
     try { await setAvatar(await compressAvatar(f)); } catch (e) { fail(e); }
     camera.classList.remove('busy');
   }
-  subscribe(paint); paint();
+  subscribe(paint); paint(); paintNotif();
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') paintNotif(); });
 }
 
 // ───────────── friends ─────────────

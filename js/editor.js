@@ -1,17 +1,19 @@
 // Create / edit a habit, plus the icon picker (all Tabler icons, outline and filled).
-import { h, WEEKDAYS, debounce, toast, clamp } from './util.js';
+import { h, WEEKDAYS, debounce, toast, clamp, addDays, fmtDay } from './util.js';
 import { icon, habitIcon, loadIndex, searchIcons, parseRef } from './icons.js';
 import { colorKeys, COLOR_NAMES, colorVars, gradient } from './colors.js';
-import { openSheet, sheetHeader, closeButton, segmented, dangerButton } from './ui.js';
-import { state, saveHabit, deleteHabit, myGroups } from './store.js';
+import { openSheet, sheetHeader, closeButton, segmented, dangerButton, toggleSwitch } from './ui.js';
+import { state, saveHabit, deleteHabit, saveReminder, myGroups } from './store.js';
+import { permissionState, isEnabled } from './push.js';
 
 const SUGGESTIONS = ['water', 'run', 'book', 'sleep', 'meditate', 'gym', 'food', 'music', 'money', 'heart', 'pill', 'code', 'brush', 'bike', 'plant'];
 
 export function openEditor(id = null) {
   const existing = id ? state.habits.get(id) : null;
+  const mine = !existing || existing.owner_id === state.me.id; // members of a shared habit can only set their own reminder
   const draft = existing
-    ? { ...existing, days: [...existing.days], minutes: Math.round(existing.target / 60) || 30, count: existing.goal_type === 'count' ? existing.target : 8 }
-    : { title: '', icon: 'outline:droplet', color: 'blue', goal_type: 'count', unit: '', days: [0, 1, 2, 3, 4, 5, 6], group_id: null, minutes: 30, count: 1 };
+    ? { ...existing, days: [...existing.days], start: existing.created_on, remind: state.reminders.get(existing.id) || '', minutes: Math.round(existing.target / 60) || 30, count: existing.goal_type === 'count' ? existing.target : 8 }
+    : { title: '', icon: 'outline:droplet', color: 'blue', goal_type: 'count', unit: '', days: [0, 1, 2, 3, 4, 5, 6], group_id: null, minutes: 30, count: 1, start: state.today, remind: '' };
 
   const sheet = openSheet({ cls: 'editor' });
   const apply = () => Object.entries(colorVars(draft.color)).forEach(([k, v]) => sheet.el.style.setProperty(k, v));
@@ -62,6 +64,31 @@ export function openEditor(id = null) {
       e.currentTarget.classList.toggle('on', !on); e.currentTarget.setAttribute('aria-pressed', String(!on));
     } }, l)));
 
+  // ── start date ──
+  const startChips = h('div', { class: 'chips' }, [['Today', state.today], ['Tomorrow', addDays(state.today, 1)], ['Next week', addDays(state.today, 7)]].map(([l, d]) =>
+    h('button', { type: 'button', class: 'chip', 'data-d': d, onClick: () => { draft.start = d; startInput.value = d; paintStart(); } }, l)));
+  const startInput = h('input', { class: 'text-input date-input', type: 'date', value: draft.start, min: existing ? null : state.today, 'aria-label': 'Start date', onChange: (e) => { if (e.target.value) { draft.start = e.target.value; paintStart(); } } });
+  const startHint = h('p', { class: 'hint' });
+  function paintStart() {
+    startChips.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.d === draft.start));
+    startHint.textContent = draft.start > state.today ? `It will first appear on ${fmtDay(draft.start, { weekday: 'long', month: 'long', day: 'numeric' })}.` : draft.start === state.today ? 'It appears right away.' : `Started ${fmtDay(draft.start, { month: 'long', day: 'numeric', year: 'numeric' })}.`;
+  }
+
+  // ── reminder ──
+  const timeInput = h('input', { class: 'text-input time-input', type: 'time', value: draft.remind || '09:00', 'aria-label': 'Reminder time', onChange: (e) => { draft.remind = e.target.value || ''; } });
+  const remindNote = h('p', { class: 'hint' });
+  const remindSwitch = toggleSwitch(!!draft.remind, (on, api) => {
+    if (on && notifyOk === false) { toast(state.demo ? 'Sign in with Google to use reminders.' : 'Turn on notifications in Settings first.'); return; }
+    api.set(on); draft.remind = on ? timeInput.value || '09:00' : ''; paintRemind();
+  });
+  let notifyOk = permissionState() === 'granted' && !state.demo ? null : false;
+  function paintRemind() {
+    timeInput.hidden = !draft.remind;
+    remindNote.hidden = notifyOk !== false;
+    remindNote.textContent = state.demo ? 'Sign in with Google to use reminders.' : permissionState() === 'needs-install' ? 'Add Muna to your Home Screen, then allow notifications in Settings.' : 'Allow notifications in Settings to receive reminders.';
+  }
+  if (notifyOk === null) isEnabled().then((ok) => { notifyOk = ok; paintRemind(); });
+
   // ── sharing ──
   const groups = myGroups();
   const share = groups.length ? h('section', { class: 'card' }, h('h3', { class: 'card-title' }, 'Share with a group'),
@@ -71,31 +98,38 @@ export function openEditor(id = null) {
 
   // ── actions ──
   const save = h('button', { type: 'button', class: 'btn primary block', onClick: onSave }, existing ? 'Save changes' : 'Add habit');
-  function validate() { save.disabled = !draft.title.trim(); }
+  function validate() { save.disabled = mine && !draft.title.trim(); }
   async function onSave() {
-    if (!draft.title.trim()) return;
+    if (mine && !draft.title.trim()) return;
     save.disabled = true;
     const time = draft.goal_type === 'time';
     try {
-      await saveHabit({
-        id: existing?.id, title: draft.title.trim(), icon: draft.icon, color: draft.color, goal_type: draft.goal_type,
-        target: time ? draft.minutes * 60 : draft.count, unit: time ? '' : draft.unit.trim(), days: draft.days, group_id: draft.group_id || null,
-      });
+      let habitId = existing?.id;
+      if (mine) {
+        habitId = await saveHabit({
+          id: existing?.id, title: draft.title.trim(), icon: draft.icon, color: draft.color, goal_type: draft.goal_type,
+          target: time ? draft.minutes * 60 : draft.count, unit: time ? '' : draft.unit.trim(), days: draft.days, group_id: draft.group_id || null,
+          created_on: draft.start,
+        });
+      }
+      await saveReminder(habitId, draft.remind || null).catch((e) => { toast('Saved, but the reminder could not be set.'); console.error(e); });
       sheet.close();
     } catch (e) { toast(e.message || 'Could not save'); save.disabled = false; }
   }
   const del = existing ? dangerButton('Delete habit', 'Tap again to delete', async () => { await deleteHabit(existing.id); sheet.close(); }, 'block') : null;
 
   sheet.el.append(
-    sheetHeader({ title: existing ? 'Edit habit' : 'New habit', right: closeButton(sheet) }),
+    sheetHeader({ title: !mine ? 'Reminder' : existing ? 'Edit habit' : 'New habit', right: closeButton(sheet) }),
     h('div', { class: 'sheet-scroll' },
-      h('section', { class: 'card name-card' }, bubble, title),
-      h('section', { class: 'card' }, h('h3', { class: 'card-title' }, 'Color'), swatches),
-      h('section', { class: 'card' }, h('h3', { class: 'card-title' }, 'Goal'), seg.el, goalBody),
-      h('section', { class: 'card' }, h('h3', { class: 'card-title' }, 'Repeat'), days),
-      share, del, h('div', { class: 'sheet-spacer' })),
+      mine && h('section', { class: 'card name-card' }, bubble, title),
+      mine && h('section', { class: 'card' }, h('h3', { class: 'card-title' }, 'Color'), swatches),
+      mine && h('section', { class: 'card' }, h('h3', { class: 'card-title' }, 'Goal'), seg.el, goalBody),
+      mine && h('section', { class: 'card' }, h('h3', { class: 'card-title' }, 'Repeat'), days),
+      mine && h('section', { class: 'card' }, h('h3', { class: 'card-title' }, 'Starts'), startChips, startInput, startHint),
+      h('section', { class: 'card' }, h('div', { class: 'card-row' }, h('h3', { class: 'card-title tight' }, 'Reminder'), remindSwitch.el), timeInput, remindNote),
+      mine && share, mine && del, h('div', { class: 'sheet-spacer' })),
     h('footer', { class: 'sheet-foot' }, save));
-  paintIcon(); paintGoal(); validate();
+  paintIcon(); paintGoal(); paintStart(); paintRemind(); validate();
   if (!existing) setTimeout(() => title.focus({ preventScroll: true }), 350);
 }
 

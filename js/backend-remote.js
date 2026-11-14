@@ -37,15 +37,16 @@ export const remote = {
 
   /** Everything the signed-in user can see. `since` limits log history. */
   async load(userId, since, recentSince) {
-    const [me, habits, myLogs, otherLogs, social] = await Promise.all([
+    const [me, habits, myLogs, otherLogs, social, reminders] = await Promise.all([
       sb.from('profiles').select('*').eq('id', userId).single().then(check),
       sb.from('habits').select('*').order('created_at').then(check),
       all(() => sb.from('habit_logs').select('habit_id,user_id,day,value').eq('user_id', userId).gte('day', since).order('day')),
       all(() => sb.from('habit_logs').select('habit_id,user_id,day,value').neq('user_id', userId).gte('day', recentSince).order('day')),
       this.loadSocial(userId),
+      sb.from('habit_reminders').select('habit_id,remind_at').eq('user_id', userId).then(check),
     ]);
     const profiles = await this.profilesFor([...social.members.map((m) => m.user_id), ...habits.map((x) => x.owner_id), ...social.friendships.flatMap((f) => [f.requester_id, f.addressee_id]), ...otherLogs.map((l) => l.user_id)]);
-    return { me, habits, logs: [...myLogs, ...otherLogs], profiles, ...social };
+    return { me, habits, logs: [...myLogs, ...otherLogs], profiles, reminders, ...social };
   },
   async loadSocial() {
     const [groups, members, friendships] = await Promise.all([
@@ -65,6 +66,26 @@ export const remote = {
   async saveHabit(row) { check(await sb.from('habits').upsert(row)); },
   async deleteHabit(id) { check(await sb.from('habits').delete().eq('id', id)); },
   async saveLog(row) { check(await sb.from('habit_logs').upsert(row)); },
+
+  async saveReminder(habitId, userId, time) {
+    if (!time) check(await sb.from('habit_reminders').delete().eq('habit_id', habitId).eq('user_id', userId));
+    else check(await sb.from('habit_reminders').upsert({ habit_id: habitId, user_id: userId, remind_at: time }));
+  },
+
+  // ── web push ──
+  async vapidKey() {
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/push`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY }, body: JSON.stringify({ action: 'vapid-public' }) });
+    if (!r.ok) throw new Error('Notifications aren\u2019t available right now.');
+    return (await r.json()).publicKey;
+  },
+  async savePushSub(sub) { check(await sb.rpc('save_push_subscription', { p_endpoint: sub.endpoint, p_p256dh: sub.keys.p256dh, p_auth: sub.keys.auth })); },
+  async deletePushSub(endpoint) { check(await sb.from('push_subscriptions').delete().eq('endpoint', endpoint)); },
+  async sendTestPush() {
+    const { data } = await sb.auth.getSession();
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/push`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: `Bearer ${data.session?.access_token}` }, body: JSON.stringify({ action: 'test' }) });
+    if (!r.ok) throw new Error('Could not send the test notification.');
+    return (await r.json()).sent || 0;
+  },
 
   async updateProfile(patch, id) { return check(await sb.from('profiles').update(patch).eq('id', id).select().single()); },
   async uploadAvatar(blob, userId, oldUrl) {
@@ -92,7 +113,7 @@ export const remote = {
   /** Live changes. Handlers get the raw postgres_changes payload. */
   listen(handlers) {
     const ch = sb.channel('muna-sync');
-    for (const t of ['habits', 'habit_logs', 'groups', 'group_members', 'friendships', 'profiles']) {
+    for (const t of ['habits', 'habit_logs', 'habit_reminders', 'groups', 'group_members', 'friendships', 'profiles']) {
       ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, (p) => handlers[t]?.(p));
     }
     ch.subscribe((status) => handlers.status?.(status));

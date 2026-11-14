@@ -16,6 +16,8 @@ export const state = {
   members: [],
   friendships: [],
   today: todayStr(),
+  viewDay: todayStr(), // the day shown on the Today screen
+  reminders: new Map(), // habit id -> 'HH:MM' (mine)
 };
 
 let backend = remote;
@@ -32,6 +34,13 @@ export const progressOf = (h, v) => clamp(v / h.target, 0, 1);
 export const isDone = (h, v) => v >= h.target;
 export const habitList = () => [...state.habits.values()].sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
 export const myGroups = () => [...state.groups.values()];
+export const MAX_AHEAD = 7;
+export function setViewDay(d) {
+  const lo = addDays(state.today, -HISTORY_DAYS), hi = addDays(state.today, MAX_AHEAD);
+  state.viewDay = d < lo ? lo : d > hi ? hi : d;
+  emit();
+}
+export const shiftViewDay = (n) => setViewDay(addDays(state.viewDay, n));
 export const profileOf = (id) => state.profiles.get(id) || { id, username: 'someone', display_name: '' };
 export const membersOf = (gid) => state.members.filter((m) => m.group_id === gid);
 
@@ -79,7 +88,7 @@ function saveCache() {
     try {
       localStorage.setItem(`muna.cache.${state.me.id}`, JSON.stringify({
         me: state.me, habits: [...state.habits.values()], logs: [...state.logs].map(([k, value]) => { const [habit_id, user_id, day] = k.split('|'); return { habit_id, user_id, day, value }; }),
-        profiles: [...state.profiles.values()], groups: [...state.groups.values()], members: state.members, friendships: state.friendships,
+        reminders: [...state.reminders].map(([habit_id, remind_at]) => ({ habit_id, remind_at })), profiles: [...state.profiles.values()], groups: [...state.groups.values()], members: state.members, friendships: state.friendships,
       }));
     } catch {}
   }, 1200);
@@ -92,6 +101,7 @@ function hydrate(b) {
   state.groups = new Map(b.groups.map((g) => [g.id, g]));
   state.members = b.members;
   state.friendships = b.friendships;
+  state.reminders = new Map((b.reminders || []).map((r) => [r.habit_id, String(r.remind_at).slice(0, 5)]));
 }
 
 // ───────────── boot / auth ─────────────
@@ -121,8 +131,16 @@ async function enter(user) {
   } catch {}
   await refresh(user.id);
   state.status = 'in';
+  syncTimezone();
   unlisten?.(); subscribedOnce = false;
   unlisten = remote.listen(realtimeHandlers());
+}
+
+function syncTimezone() {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz && state.me && state.me.timezone !== tz && !state.demo) backend.updateProfile({ timezone: tz }, state.me.id).then((m) => { state.me = m; state.profiles.set(m.id, m); }).catch(() => {});
+  } catch {}
 }
 
 export async function enterDemo() {
@@ -135,7 +153,7 @@ export async function enterDemo() {
 
 async function refresh(userId = state.me.id) {
   try {
-    state.today = todayStr();
+    rollDay();
     const b = await backend.load(userId, addDays(state.today, -HISTORY_DAYS), addDays(state.today, -2));
     hydrate(b); state.online = true;
   } catch (e) {
@@ -183,6 +201,11 @@ function realtimeHandlers() {
       if (r.user_id !== state.me.id) ensureProfiles([r.user_id]);
       emit();
     },
+    habit_reminders: (p) => {
+      const r = p.eventType === 'DELETE' ? p.old : p.new;
+      if (p.eventType === 'DELETE') state.reminders.delete(r.habit_id); else state.reminders.set(r.habit_id, String(r.remind_at).slice(0, 5));
+      emit();
+    },
     profiles: (p) => { if (p.new?.id) { state.profiles.set(p.new.id, p.new); if (p.new.id === state.me.id) state.me = p.new; emit(); } },
     groups: refreshSocial, group_members: refreshSocial, friendships: refreshSocial,
     status: (s) => { if (s === 'SUBSCRIBED') { if (subscribedOnce) reloadSilently(); subscribedOnce = true; } },
@@ -200,11 +223,16 @@ async function ensureProfiles(ids) {
 // Refresh when the app returns to the foreground or the day changes.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState !== 'visible' || state.status !== 'in') return;
-  const t = todayStr();
-  if (t !== state.today) state.today = t;
+  rollDay();
   reloadSilently(); emit();
 });
-setInterval(() => { const t = todayStr(); if (t !== state.today && state.status === 'in') { state.today = t; emit(); } }, 30000);
+function rollDay() {
+  const t = todayStr();
+  if (t === state.today) return;
+  if (state.viewDay === state.today) state.viewDay = t;
+  state.today = t;
+}
+setInterval(() => { if (state.status === 'in') { const before = state.today; rollDay(); if (state.today !== before) emit(); } }, 30000);
 
 // ───────────── actions (optimistic) ─────────────
 const pending = new Map(); // log key -> timer
@@ -232,13 +260,21 @@ export const bump = (habit, delta, day) => setValue(habit, valueOf(habit.id, day
 export async function saveHabit(data) {
   const isNew = !data.id;
   const row = { ...data, id: data.id || uuid() };
-  if (isNew) { row.owner_id = state.me.id; row.created_on = state.today; row.created_at = new Date().toISOString(); }
+  if (isNew) { row.owner_id = state.me.id; row.created_on ??= state.today; row.created_at = new Date().toISOString(); }
   const prev = state.habits.get(row.id);
   state.habits.set(row.id, { ...prev, ...row });
   emit();
   const { created_at, ...payload } = row;
   try { await offlineGuard(backend.saveHabit(payload)); } catch (e) { if (isNew) state.habits.delete(row.id); else state.habits.set(row.id, prev); emit(); throw e; }
   return row.id;
+}
+export async function saveReminder(habitId, time) {
+  const prev = state.reminders.get(habitId);
+  if (prev === (time || undefined)) return;
+  if (time) state.reminders.set(habitId, time); else state.reminders.delete(habitId);
+  emit();
+  try { await offlineGuard(backend.saveReminder(habitId, state.me.id, time || null)); }
+  catch (e) { if (prev) state.reminders.set(habitId, prev); else state.reminders.delete(habitId); emit(); throw e; }
 }
 export async function deleteHabit(id) {
   const prev = state.habits.get(id);

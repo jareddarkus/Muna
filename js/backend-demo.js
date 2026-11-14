@@ -6,12 +6,12 @@ const ME = { id: 'demo-user', username: 'you', display_name: 'You', avatar_url: 
 const needAccount = () => { throw new Error('Sign in with Google to use friends and groups.'); };
 
 function read() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } }
-const db = Object.assign({ me: ME, habits: [], logs: [] }, read());
+const db = Object.assign({ me: ME, habits: [], logs: [], reminders: [] }, read());
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {} };
 
 export const demo = {
   name: 'demo',
-  async load() { return { me: db.me, habits: db.habits, logs: db.logs, profiles: [db.me], groups: [], members: [], friendships: [] }; },
+  async load() { return { me: db.me, habits: db.habits, logs: db.logs, reminders: db.reminders, profiles: [db.me], groups: [], members: [], friendships: [] }; },
   async loadSocial() { return { groups: [], members: [], friendships: [] }; },
   async profilesFor() { return [db.me]; },
   async signOut() { localStorage.removeItem(KEY); },
@@ -27,6 +27,7 @@ export const demo = {
     if (l) l.value = row.value; else db.logs.push({ ...row });
     save();
   },
+  async saveReminder(habit_id, _u, time) { db.reminders = db.reminders.filter((r) => r.habit_id !== habit_id); if (time) db.reminders.push({ habit_id, remind_at: time }); save(); },
   async updateProfile(patch) { db.me = { ...db.me, ...patch }; save(); return db.me; },
   async uploadAvatar(blob) {
     return new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); });

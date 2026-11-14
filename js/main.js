@@ -1,4 +1,7 @@
-import { h } from './util.js';
+import './theme.js';
+import { h, toast } from './util.js';
+import { VERSION } from './version.js';
+import { syncPush } from './push.js';
 import { icon } from './icons.js';
 import { state, subscribe, boot, signInGoogle, googleEnabled, enterDemo } from './store.js';
 import { mountHome } from './home.js';
@@ -54,6 +57,16 @@ function shellView() {
   return [...views, dock];
 }
 
+// "Updated to vX" — shown once, the first time a new version runs.
+function announceVersion() {
+  try {
+    const prev = localStorage.getItem('muna.version');
+    localStorage.setItem('muna.version', VERSION);
+    if (prev && prev !== VERSION) setTimeout(() => toast(`Muna updated to v${VERSION}`, 4000), 900);
+  } catch {}
+}
+
+let announced = false;
 function route() {
   const splash = document.getElementById('splash');
   if (state.status === 'boot') return;
@@ -63,6 +76,7 @@ function route() {
     document.getElementById('layer').replaceChildren();
     document.body.classList.remove('sheet-open');
     app.replaceChildren(...(want === 'shell' ? shellView() : [loginView()]));
+    if (want === 'shell') { syncPush(); if (!announced) { announced = true; announceVersion(); } }
   }
   if (splash) { splash.classList.add('hide'); setTimeout(() => splash.remove(), 500); }
 }

@@ -53,6 +53,19 @@ export function segmented(options, value, onChange) {
   return { el, set };
 }
 
+// ───────────── switch ─────────────
+export function toggleSwitch(on, onChange) {
+  const b = h('button', { type: 'button', class: 'switch', role: 'switch', 'aria-checked': String(!!on) }, h('span', { class: 'knob' }));
+  const api = {
+    el: b,
+    set(v) { on = !!v; b.setAttribute('aria-checked', String(on)); b.classList.toggle('on', on); },
+    get: () => on,
+  };
+  b.addEventListener('click', () => { if (!b.disabled) onChange(!on, api); });
+  api.set(on);
+  return api;
+}
+
 // ───────────── sheets ─────────────
 const stack = [];
 function layer() { return document.getElementById('layer'); }
