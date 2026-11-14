@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '1.2';
+export const VERSION = '1.2.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.2.1',
+    date: 'November 14, 2026',
+    items: ['If Google sign-in fails, the login screen now shows what went wrong.'],
+  },
   {
     version: '1.2',
     date: 'November 14, 2026',

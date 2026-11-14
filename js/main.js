@@ -15,6 +15,13 @@ const GOOGLE_G = '<svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="t
 const logoSvg = (size) => `<svg viewBox="0 0 96 96" width="${size}" height="${size}" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#68A4FF"/><stop offset="1" stop-color="#7C4DFF"/></linearGradient></defs><circle cx="48" cy="48" r="38" fill="none" stroke="currentColor" stroke-opacity=".08" stroke-width="12"/><circle cx="48" cy="48" r="38" fill="none" stroke="url(#lg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="238.76" stroke-dashoffset="62" transform="rotate(-90 48 48)"/><path d="M36 49l8 8 17-18" fill="none" stroke="url(#lg)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 document.querySelector('#splash .logo').innerHTML = logoSvg(88);
 
+// Google/Supabase report sign-in problems in the address bar. Read it before the store tidies the URL up.
+const authError = (() => {
+  const p = new URLSearchParams(location.search + '&' + location.hash.slice(1));
+  const msg = p.get('error_description') || p.get('error');
+  return msg ? `Sign-in didn\u2019t work: ${msg.replace(/\+/g, ' ')}` : '';
+})();
+
 let mode = null; // 'login' | 'shell'
 let tabs = null;
 
@@ -25,9 +32,7 @@ function loginView() {
     btn.disabled = true; btn.classList.add('busy'); note.hidden = true;
     try { await signInGoogle(); } catch (e) { note.textContent = e?.message || 'Could not start Google sign-in.'; note.hidden = false; btn.disabled = false; btn.classList.remove('busy'); }
   });
-  const params = new URLSearchParams(location.search + '&' + location.hash.slice(1));
-  const urlErr = params.get('error_description');
-  if (urlErr) { note.textContent = urlErr.replace(/\+/g, ' '); note.hidden = false; }
+  if (authError) { note.textContent = authError; note.hidden = false; }
   googleEnabled().then((ok) => { if (!ok) { note.textContent = 'Google sign-in isn’t switched on for this project yet. You can still preview the app.'; note.hidden = false; } });
   return h('div', { class: 'login' },
     h('div', { class: 'login-top' }, h('div', { class: 'logo', html: logoSvg(104) }), h('h1', {}, 'Muna'), h('p', {}, 'Small habits, every day.')),
