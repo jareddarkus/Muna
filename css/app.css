@@ -449,3 +449,11 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .circle-btn.white.nav-circle:active:not(:disabled) { background: var(--card-2); transform: scale(.88); }
 .row-btn-ic.done svg { stroke-width: 3.6; }
 .hero-check svg { stroke-width: 3.6; }
+
+/* ───────── v1.3.1: shadow fixes ───────── */
+/* the hidden toast used to peek its shadow into the top of the screen */
+.toast { opacity: 0; visibility: hidden; box-shadow: none; transition: transform .5s var(--ease), opacity .25s ease-out, visibility 0s .5s, box-shadow 0s .5s; }
+.toast.show { opacity: 1; visibility: visible; box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .4); transition: transform .5s var(--ease), opacity .25s ease-out, visibility 0s, box-shadow 0s; }
+/* keep the tab bar's shadow inside the page so it is never sliced off by Safari's toolbar */
+.dock { bottom: calc(22px + env(safe-area-inset-bottom)); }
+.dock-pill { box-shadow: 0 6px 16px -8px rgba(0, 0, 0, .22), 0 0 0 1px var(--line); }
