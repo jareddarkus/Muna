@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '1.2.2';
+export const VERSION = '1.2.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.2.3',
+    date: 'November 14, 2026',
+    items: ['The empty Today screen is simpler: just a quiet \u201cNo habits\u201d.'],
+  },
   {
     version: '1.2.2',
     date: 'November 14, 2026',

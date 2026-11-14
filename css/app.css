@@ -387,3 +387,5 @@ input[type="date"], input[type="time"] { min-height: 47px; line-height: 1.2; }
 input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-date-and-time-value { text-align: left; margin: 0; }
 .step-mid { min-width: 150px; gap: 8px; }
 .step-input { width: 122px; padding: 0; font-size: 36px; overflow: visible; }
+
+.empty-text { text-align: center; color: var(--text-3); font-size: 15px; padding: 28px 0; }

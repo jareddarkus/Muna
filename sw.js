@@ -1,5 +1,5 @@
 // Offline support. Code is fetched network-first (so updates always win), icons and vendor files cache-first.
-const CACHE = 'muna-v1.2.2';
+const CACHE = 'muna-v1.2.3';
 const SHELL = ['./', 'index.html', 'css/app.css', 'manifest.webmanifest', 'vendor/supabase.js', 'assets/icon.svg',
   'js/main.js', 'js/config.js', 'js/util.js', 'js/colors.js', 'js/icons.js', 'js/ui-icons.js', 'js/ui.js', 'js/store.js',
   'js/backend-remote.js', 'js/backend-demo.js', 'js/timer.js', 'js/home.js', 'js/focus.js', 'js/editor.js', 'js/stats.js',

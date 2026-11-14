@@ -72,10 +72,7 @@ export function mountHome(root) {
   const list = h('div', { class: 'list' });
   const restTitle = h('h3', { class: 'section-label' }, 'Not scheduled');
   const restList = h('div', { class: 'list rest' });
-  const empty = h('div', { class: 'empty' },
-    h('div', { class: 'empty-art' }, icon('plus', { size: 30 })),
-    h('h3', {}, 'Start small'), h('p', {}, 'Tap the plus to add your first habit.'),
-    h('button', { type: 'button', class: 'btn primary', onClick: () => openEditor() }, 'New habit'));
+  const empty = h('p', { class: 'empty-text' }, 'No habits');
   const offline = h('div', { class: 'offline', hidden: true }, 'Offline — changes will sync when you’re back');
 
   root.append(h('header', { class: 'top home-top' }, h('span'), h('div', { class: 'daynav' }, prev, navBtn, next), plus), offline, hero, list, restTitle, restList, empty);
@@ -97,7 +94,7 @@ export function mountHome(root) {
     r.set(p);
     tween(num, Math.round(p * 100));
     hero.classList.toggle('complete', s.n > 0 && s.done === s.n);
-    label.textContent = s.n ? (s.done === s.n ? 'All done — nice' : `${s.done} of ${s.n} done`) : all.length ? 'Rest day' : 'No habits yet';
+    label.textContent = s.n ? (s.done === s.n ? 'All done — nice' : `${s.done} of ${s.n} done`) : all.length ? 'Rest day' : '';
     const sameYear = day.slice(0, 4) === state.today.slice(0, 4);
     navTitle.textContent = isToday ? 'Today' : fmtDay(day, { weekday: 'long' });
     navSub.textContent = isToday ? fmtDay(day, { weekday: 'short', month: 'short', day: 'numeric' }) : fmtDay(day, sameYear ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' });
