@@ -1,7 +1,35 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '1.2';
+export const VERSION = '1.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.3',
+    date: 'November 14, 2026',
+    items: [
+      'New look for Today: white cards, soft colored icon circles, a big \u201cToday\u201d title and a check when everything is done.',
+      'Tap the ring on a habit to log it instantly (+1, tick, or start/pause the timer). Tap the card to open it.',
+      'Pencil button: edit mode, where tapping a habit opens its settings.',
+      'Tab bar now shows labels.',
+    ],
+  },
+  {
+    version: '1.2.3',
+    date: 'November 14, 2026',
+    items: ['The empty Today screen is simpler: just a quiet \u201cNo habits\u201d.'],
+  },
+  {
+    version: '1.2.2',
+    date: 'November 14, 2026',
+    items: [
+      'The app no longer zooms (pinch or double-tap) or shifts sideways when you tap a field.',
+      'The start-date field fits inside its card, and numbers in the goal stepper are no longer cut off.',
+    ],
+  },
+  {
+    version: '1.2.1',
+    date: 'November 14, 2026',
+    items: ['If Google sign-in fails, the login screen now shows what went wrong.'],
+  },
   {
     version: '1.2',
     date: 'November 14, 2026',
