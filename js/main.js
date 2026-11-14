@@ -25,8 +25,7 @@ const authError = (() => {
 // Block pinch-zoom and double-tap zoom (Safari ignores user-scalable=no, so also stop the gesture itself).
 ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
 document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-let lastTouch = 0;
-document.addEventListener('touchend', (e) => { const now = Date.now(); if (now - lastTouch < 300 && !e.target.closest('input,textarea')) e.preventDefault(); lastTouch = now; }, { passive: false });
+// Double-tap zoom is already disabled in CSS (touch-action: manipulation); never swallow taps here.
 
 let mode = null; // 'login' | 'shell'
 let tabs = null;
