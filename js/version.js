@@ -1,7 +1,17 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '1.2.3';
+export const VERSION = '1.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.3',
+    date: 'November 14, 2026',
+    items: [
+      'New look for Today: white cards, soft colored icon circles, a big \u201cToday\u201d title and a check when everything is done.',
+      'Tap the ring on a habit to log it instantly (+1, tick, or start/pause the timer). Tap the card to open it.',
+      'Pencil button: edit mode, where tapping a habit opens its settings.',
+      'Tab bar now shows labels.',
+    ],
+  },
   {
     version: '1.2.3',
     date: 'November 14, 2026',

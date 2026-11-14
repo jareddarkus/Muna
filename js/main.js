@@ -49,10 +49,11 @@ function shellView() {
   const views = ['home', 'stats', 'settings'].map((n) => h('main', { class: 'view', id: `view-${n}`, 'aria-label': n }));
   const stats = mountStats(views[1]);
   mountHome(views[0]); mountSettings(views[2]);
-  const items = [['home', 'Today'], ['clipboard-data', 'Progress'], ['settings', 'Settings']];
+  const items = [['home', 'Home'], ['clipboard-data', 'Progress'], ['settings', 'Settings']];
   const thumb = h('span', { class: 'dock-thumb' });
   const buttons = items.map(([ic, label], i) => h('button', { type: 'button', class: 'dock-btn', 'aria-label': label, onClick: () => go(i) },
-    h('span', { class: 'off' }, icon(ic, { size: 26 })), h('span', { class: 'on' }, icon(ic, { size: 26, filled: true }))));
+    h('span', { class: 'dock-ic' }, h('span', { class: 'off' }, icon(ic, { size: 25 })), h('span', { class: 'on' }, icon(ic, { size: 25, filled: true }))),
+    h('span', { class: 'dock-label' }, label)));
   const dock = h('nav', { class: 'dock' }, h('div', { class: 'dock-pill' }, thumb, buttons));
   let cur = -1;
   function go(i) {
