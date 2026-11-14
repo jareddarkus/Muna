@@ -26,6 +26,10 @@ export function append(el, kids) {
 }
 export const clear = (el) => { el.replaceChildren(); return el; };
 
+/** The whole interface is drawn slightly smaller than its design sizes. */
+export const UI_SCALE = 0.94;
+export const sz = (n) => Math.round(n * UI_SCALE);
+
 // ── dates (all "days" are local calendar days as YYYY-MM-DD strings) ──
 const pad = (n) => String(n).padStart(2, '0');
 export const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;

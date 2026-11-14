@@ -1,10 +1,11 @@
 // Reusable UI building blocks: sheets, progress rings, avatars, segmented controls.
-import { h, clamp } from './util.js';
+import { h, clamp, sz } from './util.js';
 import { icon } from './icons.js';
 
 // ───────────── progress ring ─────────────
 let ringId = 0;
 export function ring({ size = 200, stroke = 14, cls = '' } = {}) {
+  size = sz(size); stroke = sz(stroke);
   const r = (size - stroke) / 2, C = 2 * Math.PI * r, id = `rg${ringId++}`;
   const el = h('div', { class: `ring ${cls}`, style: { width: `${size}px`, height: `${size}px` } });
   el.innerHTML = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" aria-hidden="true">
@@ -22,6 +23,7 @@ export function ring({ size = 200, stroke = 14, cls = '' } = {}) {
 // ───────────── avatar ─────────────
 const AV = ['#FF7A70', '#FFB04D', '#3CC78A', '#6BDDF7', '#68A4FF', '#BA94FF', '#FF93CB', '#C9A074'];
 export function avatar(p, size = 40) {
+  size = sz(size);
   const name = (p?.display_name || p?.username || '?').trim();
   let hash = 0; for (const ch of p?.id || name) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
   const el = h('span', { class: 'avatar', style: { width: `${size}px`, height: `${size}px`, fontSize: `${Math.round(size * 0.4)}px`, '--av': AV[hash % AV.length] } }, name[0]?.toUpperCase());
