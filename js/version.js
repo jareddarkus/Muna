@@ -1,7 +1,15 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '1.2.1';
+export const VERSION = '1.2.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.2.2',
+    date: 'November 14, 2026',
+    items: [
+      'The app no longer zooms (pinch or double-tap) or shifts sideways when you tap a field.',
+      'The start-date field fits inside its card, and numbers in the goal stepper are no longer cut off.',
+    ],
+  },
   {
     version: '1.2.1',
     date: 'November 14, 2026',
