@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '1.3.1';
+export const VERSION = '1.3.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.3.2',
+    date: 'November 14, 2026',
+    items: ['Fast taps on + and \u2212 (and every other button) are now all counted.'],
+  },
   {
     version: '1.3.1',
     date: 'November 14, 2026',
