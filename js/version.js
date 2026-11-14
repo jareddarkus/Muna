@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '1.3';
+export const VERSION = '1.3.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.3.1',
+    date: 'November 14, 2026',
+    items: ['Removed the stray shadow at the top of the screen.', 'The tab bar\u2019s shadow is no longer cut off at the bottom.'],
+  },
   {
     version: '1.3',
     date: 'November 14, 2026',
