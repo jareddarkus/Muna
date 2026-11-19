@@ -1,5 +1,5 @@
 // Today: header with day arrows, the big ring (today only), pending habits, a divider, then completed habits in their own color.
-import { h, tween, fmtDay, shortDay, addDays } from './util.js';
+import { h, tween, fmtDay, shortDay, addDays, scheduleLabel } from './util.js';
 import { icon } from './icons.js';
 import { PALETTE, hex } from './colors.js';
 import { ring } from './ui.js';
@@ -31,10 +31,12 @@ export function mountHome(root) {
 
   const list = h('div', { class: 'cards' });
   const divider = h('div', { class: 'divider' });
+  const dividerGhost = h('div', { class: 'divider' });
   const empty = h('p', { class: 'empty-text' }, 'No habits');
   root.append(cal.el, header, hero, list, empty);
 
   const cards = new Map(); // habit id -> component
+  const ghosts = new Map(); // habits that did not exist yet on the viewed day: gray, below a divider
   function make(hb) {
     const c = card({ onClick: () => openHabit(hb.id, state.viewDay) });
     const rb = progressRing();
@@ -78,7 +80,17 @@ export function mountHome(root) {
       c.el.classList.toggle('running', live && isRunning(hb.id));
       (done ? finished : pending).push(c);
     }
-    const order = [...pending.map((c) => c.el), ...(pending.length && finished.length ? [divider] : []), ...finished.map((c) => c.el)];
+    // habits created after this day: shown gray, not clickable, separated by a divider
+    const notYet = habitList().filter((x) => day < x.created_on);
+    for (const [id, g] of ghosts) if (!notYet.some((x) => x.id === id)) { g.el.remove(); ghosts.delete(id); }
+    const ghostEls = notYet.map((x) => {
+      let g = ghosts.get(x.id);
+      if (!g) { g = card({}); g.el.classList.add('ghost'); g.el.removeAttribute('role'); g.el.removeAttribute('tabindex'); g.slot.append(h('span', { class: 'ghost-ring' })); ghosts.set(x.id, g); }
+      g.set({ color: 'var(--gray)', icon: x.icon, name: x.title, sub: scheduleLabel(x.days), done: false });
+      return g.el;
+    });
+    const order = [...pending.map((c) => c.el), ...(pending.length && finished.length ? [divider] : []), ...finished.map((c) => c.el),
+      ...(ghostEls.length && (pending.length || finished.length) ? [dividerGhost] : []), ...ghostEls];
     const cur = [...list.children];
     if (order.length !== cur.length || order.some((el, i) => el !== cur[i])) list.replaceChildren(...order);
     // slide cards that changed position (e.g. a habit that was just completed)
@@ -92,7 +104,7 @@ export function mountHome(root) {
       }
     }
     empty.hidden = habitList().length > 0;
-    list.hidden = all.length === 0;
+    list.hidden = order.length === 0;
   }
   subscribe(update);
   onTick(update);

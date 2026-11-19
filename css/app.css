@@ -395,3 +395,10 @@ html, body, #app, #layer, #app *, #layer * { -webkit-user-select: none; user-sel
 #app input, #app textarea, #layer input, #layer textarea, #app [contenteditable="true"] { -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 html, body { touch-action: pan-x pan-y; }
 img { -webkit-user-drag: none; user-drag: none; }
+
+/* habits that did not exist yet on the day being viewed */
+.card.ghost { background: var(--track); cursor: default; pointer-events: none; }
+.card.ghost:active { transform: none; }
+.card.ghost .card-circle { background: var(--gray); color: #fff; }
+.card.ghost .card-title, .card.ghost .card-sub { color: var(--dgray); }
+.ghost-ring { width: 60px; height: 60px; border-radius: 50%; background: var(--gray); }

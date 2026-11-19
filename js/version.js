@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.5.3';
+export const VERSION = '2.6';
 
 export const CHANGELOG = [
+  {
+    version: '2.6',
+    date: 'November 19, 2026',
+    items: ['On a day before a habit existed, the habit now shows in soft grays (no goal, no ring) under a divider, so you can still see it was not there yet.'],
+  },
   {
     version: '2.5.3',
     date: 'November 19, 2026',
