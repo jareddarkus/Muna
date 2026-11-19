@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.6.2';
+export const VERSION = '2.6.3';
 
 export const CHANGELOG = [
+  {
+    version: '2.6.3',
+    date: 'November 19, 2026',
+    items: ['Habit editor: no "min" next to the number; the question above now says "How many minutes, each day?".'],
+  },
   {
     version: '2.6.2',
     date: 'November 19, 2026',
