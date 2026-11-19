@@ -146,7 +146,7 @@ export function openGroup(gid) {
       h('span', { class: 'sh-text' }, h('b', {}, t.title), h('i', {}, n ? `${n} ${n === 1 ? 'step' : 'steps'}` : 'Task')), h('span', { class: 'sh-right' }, p.author_id === state.me.id ? null : copy));
   }
   function pickHabit(done) {
-    const pick = openPanel({ cls: 'picker-habit' });
+    const pick = openPanel({ cls: 'picker-habit', tapClose: true });
     const list = h('div', { class: 'cards' }, habitList().map((hb) => { const c = card({ onClick: () => { done(hb); pick.close(); } }); c.set({ color: hex(hb.color), icon: hb.icon, name: hb.title, sub: habitSub(hb), done: false }); return c.el; }));
     pick.el.append(panelBar(pick, { title: 'Share a habit' }), h('div', { class: 'panel-body' }, h('p', { class: 'hint center' }, 'Members see its 21-day completion and can copy it. Your reports stay private.'), list.children.length ? list : h('p', { class: 'empty-text' }, 'No habits yet')));
   }
@@ -217,7 +217,7 @@ function openComments(post, gid) {
 // ───────────── admin tools ─────────────
 export function openGroupAdmin(gid) {
   let unsub = () => {};
-  const panel = openPanel({ cls: 'editor', onClose: () => unsub() });
+  const panel = openPanel({ cls: 'editor', onClose: () => unsub(), tapClose: true });
   const g = state.groups.get(gid);
   const draft = { name: g.name, description: g.description, icon: g.icon, color: g.color, is_public: g.is_public };
   const paint = () => panel.el.style.setProperty('--c', hex(draft.color));

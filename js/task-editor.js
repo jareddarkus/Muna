@@ -16,7 +16,7 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
     : { title: '', icon: 'outline:list-check', description: '', day: parentId ? day : day || state.taskDay, parent: parentId };
   let savedId = existing?.id || null; // set once the task exists (so steps can be added before the final save)
   let unsub = () => {};
-  const panel = openPanel({ cls: 'editor', onClose: () => unsub() });
+  const panel = openPanel({ cls: 'editor', onClose: () => unsub(), tapClose: true });
   panel.el.style.setProperty('--c', TASK_COLOR);
   const isStep = () => !!draft.parent;
   const heading = () => `${savedId ? 'Edit' : 'New'} ${isStep() ? 'step' : 'task'}`;
@@ -41,7 +41,7 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
     title.textContent = heading(); paintDay(); paintSave(); dup.hidden = del.hidden = !savedId;
   }
   function pickParent() {
-    const pick = openPanel({ cls: 'picker-habit short' });
+    const pick = openPanel({ cls: 'picker-habit short', tapClose: true });
     const banned = new Set(savedId ? [savedId, ...descendantIds(savedId)] : []);
     const rows = [{ id: null, title: 'Top level', depth: 0, ic: null }];
     const walk = (pid, depth) => { for (const t of taskList()) if (t.parent_id === pid && !banned.has(t.id)) { rows.push({ id: t.id, title: t.title, depth, ic: t.icon }); walk(t.id, depth + 1); } };

@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.5.1';
+export const VERSION = '2.5.2';
 
 export const CHANGELOG = [
+  {
+    version: '2.5.2',
+    date: 'November 19, 2026',
+    items: ['Edit screens (habit, task, group), the share and parent pickers, Updates and the log sheets now close when you tap anything that is not a button or a field.'],
+  },
   {
     version: '2.5.1',
     date: 'November 19, 2026',
