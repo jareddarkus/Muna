@@ -20,7 +20,7 @@ export function attachHold(el, getItems) {
 
   el.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    if (e.target.closest('input, textarea, select')) return;
+    if (e.target.closest('input, textarea, select, .ring-btn')) return; // the progress ring has its own tap / hold
     if (active) return;
     suppress = false; sx = e.clientX; sy = e.clientY;
     pressTimer = setTimeout(() => { pressTimer = null; el.classList.add('hold-press'); }, PRESS_MS);

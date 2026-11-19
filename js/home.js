@@ -4,7 +4,7 @@ import { icon } from './icons.js';
 import { PALETTE, hex } from './colors.js';
 import { ring } from './ui.js';
 import { card, progressRing, habitSub } from './cards.js';
-import { state, subscribe, habitList, isScheduled, valueOf, progressOf, isDone, shiftViewDay, setViewDay, HISTORY_DAYS, MAX_AHEAD } from './store.js';
+import { state, subscribe, habitList, isScheduled, valueOf, progressOf, isDone, shiftViewDay, setViewDay, bump, setValue, HISTORY_DAYS, MAX_AHEAD } from './store.js';
 import { todayProgress } from './rates.js';
 import { liveValue, isRunning, onTick, discardMissing } from './timer.js';
 import { openHabit } from './habit.js';
@@ -12,6 +12,7 @@ import { openEditor } from './editor.js';
 import { attachHold } from './hold.js';
 import { habitItems } from './habit-actions.js';
 import { createCalendar } from './calendar.js';
+import { attachRingActions } from './ring-actions.js';
 
 export function mountHome(root) {
   const cal = createCalendar({ getDay: () => state.viewDay, onPick: (d) => { setViewDay(d); cal.close(); } });
@@ -43,6 +44,13 @@ export function mountHome(root) {
     c.slot.append(rb.el);
     const comp = { ...c, rb, hb };
     attachHold(c.el, () => habitItems(comp.hb));
+    // tap the ring: +1 (or +1 minute); hold it: the circle fills and the habit is completed at 100%
+    const day = () => state.viewDay, cur = () => (comp.hb.goal_type === 'time' && day() === state.today ? liveValue(comp.hb.id) : valueOf(comp.hb.id, day()));
+    const ok = () => day() <= state.today; // nothing can be logged in the future
+    attachRingActions(rb.el, { ring: rb.ring, state: rb,
+      getProgress: () => (isDone(comp.hb, cur()) ? 1 : progressOf(comp.hb, cur())), isDone: () => !ok() || isDone(comp.hb, cur()),
+      onTap: () => { if (ok()) bump(comp.hb, comp.hb.goal_type === 'time' ? 60 : 1, day()); },
+      onComplete: () => setValue(comp.hb, comp.hb.target, day()) });
     return comp;
   }
 

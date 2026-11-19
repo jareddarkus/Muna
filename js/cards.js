@@ -36,11 +36,11 @@ export function progressRing() {
   const center = h('span', { class: 'ring-center' });
   const el = h('span', { class: 'ring-btn' }, r.el, center);
   let key = null;
-  return {
-    el,
+  const api = {
+    el, ring: r, filling: false,
     set(hb, value, p, done) {
       r.color(hex(hb.color));
-      r.set(done ? 1 : p);
+      if (!api.filling) r.set(done ? 1 : p);
       el.classList.toggle('done', done);
       const k = done ? 'check' : ringNumber(hb, value);
       if (k === key) return;
@@ -49,6 +49,7 @@ export function progressRing() {
       else { center.textContent = k; center.classList.toggle('small', k.length > 2); }
     },
   };
+  return api;
 }
 
 /** Ring button for Reports: percentage inside, colored by how well the habit is going. */
@@ -73,16 +74,16 @@ export const habitSub = (hb) => `${goalLabel(hb)} • ${scheduleLabel(hb.days)}`
 export const TASK_COLOR = PALETTE.darkGray;
 
 /** Ring button for a task: percentage of its steps when it has steps, a check once done. Tapping it completes (or resets) the task and its steps. */
-export function taskRing(onToggle) {
+export function taskRing() {
   const r = ring({ size: 60, stroke: 6, color: TASK_COLOR });
   const center = h('span', { class: 'ring-center small' });
-  const el = h('button', { type: 'button', class: 'ring-btn task-ring', 'aria-label': 'Mark done', onClick: (e) => { e.stopPropagation(); tap(); onToggle?.(); } }, r.el, center);
+  const el = h('button', { type: 'button', class: 'ring-btn task-ring', 'aria-label': 'Mark done' }, r.el, center);
   let key = null;
-  return {
-    el,
+  const api = {
+    el, ring: r, filling: false,
     /** progress is 0..1 of the steps (only used when the task has steps). */
     set(done, hasSteps, progress) {
-      r.set(done ? 1 : hasSteps ? progress : 0);
+      if (!api.filling) r.set(done ? 1 : hasSteps ? progress : 0);
       el.classList.toggle('done', done);
       el.setAttribute('aria-label', done ? 'Mark as not done' : 'Mark done');
       const pct = hasSteps && !done ? Math.min(99, Math.round(progress * 100)) : 0;
@@ -93,4 +94,5 @@ export function taskRing(onToggle) {
       else center.textContent = k;
     },
   };
+  return api;
 }
