@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.9';
+export const VERSION = '2.9.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.9.1',
+    date: 'November 19, 2026',
+    items: ['The round X (cancel a friend request) is now centered in the end of its card, like the other round buttons.'],
+  },
   {
     version: '2.9',
     date: 'November 19, 2026',
