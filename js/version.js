@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.5';
+export const VERSION = '2.5.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.5.1',
+    date: 'November 19, 2026',
+    items: ['No more text selection (the copy / look up bar and blue handles) and no pinch zoom anywhere in the app. You can still select text inside text boxes.'],
+  },
   {
     version: '2.5',
     date: 'November 19, 2026',
