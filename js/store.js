@@ -82,6 +82,13 @@ export function taskPath(t) {
   while (p && guard++ < 50) { names.unshift(p.title); p = p.parent_id ? state.tasks.get(p.parent_id) : null; }
   return names.join(' › ');
 }
+const kidsIndex = () => { const m = new Map(); for (const t of taskList()) if (t.parent_id) (m.get(t.parent_id) || m.set(t.parent_id, []).get(t.parent_id)).push(t); return m; };
+/** 0..1: a task with steps is as done as its steps (each counted by its own steps in turn); one without steps is done or not. */
+export function taskProgress(id, idx = kidsIndex()) {
+  const kids = idx.get(id);
+  if (!kids?.length) return state.tasks.get(id)?.done_at ? 1 : 0;
+  return kids.reduce((sum, k) => sum + taskProgress(k.id, idx), 0) / kids.length;
+}
 /** Steps done / steps in total directly below a task. */
 export function stepCount(id) {
   const kids = childrenOf(id);
@@ -337,13 +344,50 @@ export async function saveTask(data) {
   state.tasks.set(row.id, full);
   emit();
   try { await offlineGuard(backend.saveTasks([full])); } catch (e) { if (isNew) state.tasks.delete(row.id); else state.tasks.set(row.id, prev); emit(); throw e; }
+  if (isNew || (prev && prev.parent_id !== full.parent_id)) { // a new or moved step changes how done its parents are
+    if (prev && prev.parent_id !== full.parent_id) await reconcile(prev.parent_id).catch(() => {});
+    await reconcile(full.parent_id).catch(() => {});
+  }
   return row.id;
 }
-export const setTaskDone = (t, done) => saveTask({ id: t.id, done_at: done ? new Date().toISOString() : null });
+/** Applies done_at changes (id -> timestamp | null) locally, then saves them. */
+async function commitDone(changes) {
+  if (!changes.size) return;
+  const prev = new Map([...changes.keys()].map((id) => [id, state.tasks.get(id)]));
+  const rows = [...changes].map(([id, done_at]) => ({ ...state.tasks.get(id), done_at }));
+  rows.forEach((r) => state.tasks.set(r.id, r)); emit();
+  try { await offlineGuard(backend.saveTasks(rows)); } catch (e) { prev.forEach((r, id) => state.tasks.set(id, r)); emit(); throw e; }
+}
+/** A task with steps is done exactly when all its steps are: walk up from `pid` and fix each parent that is out of step. */
+function climb(pid, changes, now) {
+  const idx = kidsIndex();
+  const doneNow = (id) => (changes.has(id) ? changes.get(id) : state.tasks.get(id)?.done_at);
+  for (let p = pid ? state.tasks.get(pid) : null, guard = 0; p && guard++ < 60; p = p.parent_id ? state.tasks.get(p.parent_id) : null) {
+    const kids = idx.get(p.id) || [];
+    if (!kids.length) break;
+    const all = kids.every((k) => doneNow(k.id));
+    if (!!doneNow(p.id) === all) break;
+    changes.set(p.id, all ? now : null);
+  }
+}
+async function reconcile(pid) {
+  const changes = new Map(); climb(pid, changes, new Date().toISOString());
+  await commitDone(changes);
+}
+/** Marking a task with steps done (or not done) does the same to all its steps; its parents follow. */
+export async function setTaskDone(t, done) {
+  const now = new Date().toISOString(), changes = new Map(), idx = kidsIndex();
+  const mark = (id) => { changes.set(id, done ? now : null); (idx.get(id) || []).forEach((k) => mark(k.id)); };
+  mark(t.id);
+  climb(t.parent_id, changes, now);
+  await commitDone(changes);
+}
 export async function deleteTask(id) {
   const gone = [id, ...descendantIds(id)].map((x) => state.tasks.get(x)).filter(Boolean);
+  const parent = state.tasks.get(id)?.parent_id;
   gone.forEach((t) => state.tasks.delete(t.id)); emit();
   try { await offlineGuard(backend.deleteTask(id)); } catch (e) { gone.forEach((t) => state.tasks.set(t.id, t)); emit(); throw e; }
+  await reconcile(parent).catch(() => {});
 }
 /** Copies a task / step / sub-step with everything below it. The copy sits next to the original unless a parent is given. */
 export async function duplicateTask(id, { parentId, day } = {}) {
@@ -360,6 +404,7 @@ export async function duplicateTask(id, { parentId, day } = {}) {
   copy(root, parentId === undefined ? root.parent_id : parentId, true);
   rows.forEach((r) => state.tasks.set(r.id, r)); emit();
   try { await offlineGuard(backend.saveTasks(rows)); } catch (e) { rows.forEach((r) => state.tasks.delete(r.id)); emit(); throw e; }
+  await reconcile(rows[0].parent_id).catch(() => {});
   return rows[0].id;
 }
 /** Snapshot of a task and its steps for sharing (no days, nothing completed). */

@@ -72,7 +72,7 @@ export const habitSub = (hb) => `${goalLabel(hb)} • ${scheduleLabel(hb.days)}`
 /** Tasks have no color of their own: they are always dark gray. */
 export const TASK_COLOR = PALETTE.darkGray;
 
-/** Ring button for a task: steps done / steps (when it has steps), a check once done. Tapping it completes the task. */
+/** Ring button for a task: percentage of its steps when it has steps, a check once done. Tapping it completes (or resets) the task and its steps. */
 export function taskRing(onToggle) {
   const r = ring({ size: 60, stroke: 6, color: TASK_COLOR });
   const center = h('span', { class: 'ring-center small' });
@@ -80,11 +80,13 @@ export function taskRing(onToggle) {
   let key = null;
   return {
     el,
-    set(done, n, nDone) {
-      r.set(done ? 1 : n ? nDone / n : 0);
+    /** progress is 0..1 of the steps (only used when the task has steps). */
+    set(done, hasSteps, progress) {
+      r.set(done ? 1 : hasSteps ? progress : 0);
       el.classList.toggle('done', done);
       el.setAttribute('aria-label', done ? 'Mark as not done' : 'Mark done');
-      const k = done ? 'check' : n ? `${nDone}/${n}` : '';
+      const pct = hasSteps && !done ? Math.min(99, Math.round(progress * 100)) : 0;
+      const k = done ? 'check' : pct ? `${pct}%` : '';
       if (k === key) return;
       key = k;
       if (done) center.replaceChildren(icon('check', { size: 37, stroke: 3.86 }));
