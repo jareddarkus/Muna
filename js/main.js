@@ -78,8 +78,12 @@ function shellView() {
       if (c.hidden || !c.offsetHeight) continue;
       if (c.matches('.top-bar, .cards, .rep-icons, .mini-cal, .profile-actions, .seg-wrap')) kids.push(...[...c.children].filter((x) => !x.hidden).slice(0, 30)); else kids.push(c);
     }
-    kids.forEach((el, k) => el.animate([{ opacity: 0, transform: 'translateY(22px)' }, { opacity: 1, transform: 'translateY(0)' }],
-      { duration: 380, delay: Math.min(k * 34, 380), easing: 'cubic-bezier(.16, .84, .3, 1)', fill: 'backwards' }));
+    // the rise is a quick ease-out, but the fade has its own softer, slower curve: an ease-out fade reaches almost full opacity at once and looks like a cut
+    kids.forEach((el, k) => {
+      const delay = Math.min(k * 38, 420);
+      el.animate([{ transform: 'translateY(20px)' }, { transform: 'translateY(0)' }], { duration: 620, delay, easing: 'cubic-bezier(.16, .84, .3, 1)', fill: 'backwards' });
+      el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 520, delay, easing: 'cubic-bezier(.45, 0, .35, 1)', fill: 'backwards' });
+    });
   }
   function go(i) {
     if (cur >= 0 && i !== cur) tap();
