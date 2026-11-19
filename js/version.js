@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.7';
+export const VERSION = '2.7.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.7.1',
+    date: 'November 19, 2026',
+    items: ['Switching between Today and Tasks: the top row (view button, day arrows, plus) stays still instead of fading and reloading; only the content changes.'],
+  },
   {
     version: '2.7',
     date: 'November 19, 2026',
