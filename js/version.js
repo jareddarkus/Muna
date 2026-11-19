@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.3.1';
+export const VERSION = '2.4';
 
 export const CHANGELOG = [
+  {
+    version: '2.4',
+    date: 'November 19, 2026',
+    items: ['Tasks and steps now show the completion percentage of their steps, down through sub-steps. A task with steps is done exactly when all its steps are done; one without steps is simply done or not done.'],
+  },
   {
     version: '2.3.1',
     date: 'November 19, 2026',

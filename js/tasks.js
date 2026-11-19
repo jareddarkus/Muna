@@ -4,7 +4,7 @@ import { icon } from './icons.js';
 import { PALETTE } from './colors.js';
 import { ring } from './ui.js';
 import { card, taskRing, TASK_COLOR } from './cards.js';
-import { state, subscribe, tasksOn, taskList, isTaskDone, setTaskDone, setTaskDay, shiftTaskDay, stepCount, taskPath, HISTORY_DAYS, MAX_AHEAD } from './store.js';
+import { state, subscribe, tasksOn, taskList, isTaskDone, setTaskDone, setTaskDay, shiftTaskDay, stepCount, taskPath, taskProgress, HISTORY_DAYS, MAX_AHEAD } from './store.js';
 import { taskDayProgress } from './rates.js';
 import { attachHold } from './hold.js';
 import { createCalendar } from './calendar.js';
@@ -58,7 +58,8 @@ export function mountTasks(root) {
 
     const before = new Map([...cards].map(([id, c]) => [id, c.el.getBoundingClientRect().top]));
     for (const [id, c] of cards) if (!all.some((x) => x.id === id)) { c.el.remove(); cards.delete(id); }
-    const pending = [], finished = [];
+    const pending = [], finished = [], idx = new Map();
+    for (const x of taskList()) if (x.parent_id) (idx.get(x.parent_id) || idx.set(x.parent_id, []).get(x.parent_id)).push(x);
     for (const tk of all) {
       let c = cards.get(tk.id);
       if (!c) { c = make(tk); cards.set(tk.id, c); c.el.classList.add('enter'); c.el.addEventListener('animationend', () => c.el.classList.remove('enter'), { once: true }); }
@@ -67,7 +68,7 @@ export function mountTasks(root) {
       const late = !done && tk.day < day ? `Due ${shortDay(tk.day)}` : '';
       const sub = [late, path ? `in ${path}` : '', sc.n ? `${sc.done}/${sc.n} steps` : ''].filter(Boolean).join(' • ') || (tk.parent_id ? 'Step' : 'Task');
       c.set({ color: TASK_COLOR, icon: tk.icon, name: tk.title, sub, done });
-      c.tr.set(done, sc.n, sc.done);
+      c.tr.set(done, sc.n > 0, taskProgress(tk.id, idx));
       (done ? finished : pending).push(c);
     }
     const order = [...pending.map((c) => c.el), ...(pending.length && finished.length ? [divider] : []), ...finished.map((c) => c.el)];

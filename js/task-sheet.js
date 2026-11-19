@@ -4,7 +4,7 @@ import { icon, habitIcon } from './icons.js';
 import { openPanel, panelBar } from './ui.js';
 import { TASK_COLOR } from './cards.js';
 import { PALETTE } from './colors.js';
-import { state, subscribe, childrenOf, isTaskDone, setTaskDone, stepCount, taskPath } from './store.js';
+import { state, subscribe, childrenOf, isTaskDone, setTaskDone, stepCount, taskPath, taskProgress } from './store.js';
 import { attachHold } from './hold.js';
 import { openTaskEditor } from './task-editor.js';
 import { taskItems } from './task-actions.js';
@@ -22,7 +22,7 @@ export function openTask(id) {
   const about = h('p', { class: 'task-about' });
   const steps = h('div', { class: 'step-list' });
   const addStep = h('button', { type: 'button', class: 'pill small light', onClick: () => openTaskEditor({ parentId: id }) }, icon('plus', { size: 22, stroke: 2 }), 'Add step');
-  const complete = h('button', { type: 'button', class: 'big-btn main', 'aria-label': 'Toggle done', onClick: () => { tap(); const t = state.tasks.get(id); if (t) setTaskDone(t, !isTaskDone(t)); } }, icon('check', { size: 37.4, stroke: 3.86 }));
+  const complete = h('button', { type: 'button', class: 'big-btn main', 'aria-label': 'Complete or reset', onClick: () => { tap(); const t = state.tasks.get(id); if (t) setTaskDone(t, !isTaskDone(t)); } }, icon('check', { size: 37.4, stroke: 3.86 }));
   panel.el.append(panelBar(panel, { left: edit, right: closeBtn, title: titleEl }),
     h('div', { class: 'panel-body center' }, path, about, steps, addStep, h('div', { class: 'habit-controls' }, complete)));
 
@@ -42,7 +42,8 @@ export function openTask(id) {
     if (!t) { panel.close(); return; }
     const done = isTaskDone(t);
     titleEl.textContent = t.title;
-    const p = taskPath(t); path.textContent = p ? `in ${p}` : ''; path.hidden = !p;
+    const sc0 = stepCount(id), pr = Math.round(taskProgress(id) * 100);
+    const p = [taskPath(t) ? `in ${taskPath(t)}` : '', sc0.n ? `${done ? 100 : Math.min(99, pr)}% done` : ''].filter(Boolean).join(' • '); path.textContent = p; path.hidden = !p;
     about.textContent = t.description || ''; about.hidden = !t.description;
     panel.el.classList.toggle('done', done);
     complete.style.background = done ? PALETTE.green : '';
@@ -53,7 +54,7 @@ export function openTask(id) {
       r.t = c;
       r.name.textContent = c.title;
       if (r.ref !== c.icon) { r.ref = c.icon; r.ic.replaceChildren(habitIcon(c.icon, 22, 1.8)); }
-      const sc = stepCount(c.id); r.count.textContent = sc.n ? `${sc.done}/${sc.n}` : '';
+      const sc = stepCount(c.id); r.count.textContent = sc.n ? `${Math.round(taskProgress(c.id) * 100)}%` : '';
       r.el.classList.toggle('done', isTaskDone(c));
       return r.el;
     });
