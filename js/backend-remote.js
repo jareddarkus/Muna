@@ -37,15 +37,16 @@ export const remote = {
 
   /** Everything the signed-in user can see. `since` limits log history. */
   async load(userId, since, recentSince) {
-    const [me, habits, myLogs, social, reminders] = await Promise.all([
+    const [me, habits, myLogs, social, reminders, tasks] = await Promise.all([
       sb.from('profiles').select('*').eq('id', userId).single().then(check),
       sb.from('habits').select('*').eq('owner_id', userId).order('created_at').then(check),
       all(() => sb.from('habit_logs').select('habit_id,user_id,day,value').eq('user_id', userId).gte('day', since).order('day')),
       this.loadSocial(userId),
       sb.from('habit_reminders').select('habit_id,remind_at').eq('user_id', userId).then(check),
+      all(() => sb.from('tasks').select('*').eq('owner_id', userId).order('created_at').order('id')),
     ]);
     const profiles = await this.profilesFor([...social.members.map((m) => m.user_id), ...social.friendships.flatMap((f) => [f.requester_id, f.addressee_id]), ...social.invites.map((i) => i.inviter_id), ...social.requests.map((q) => q.user_id)]);
-    return { me, habits, logs: myLogs, profiles, reminders, ...social };
+    return { me, habits, tasks, logs: myLogs, profiles, reminders, ...social };
   },
   async loadSocial(userId) {
     const [members, friendships, invites, requests] = await Promise.all([
@@ -71,6 +72,19 @@ export const remote = {
 
   async saveHabit(row) { check(await sb.from('habits').upsert(row)); },
   async deleteHabit(id) { check(await sb.from('habits').delete().eq('id', id)); },
+  /** Saves tasks parents-first, one level at a time (the database checks each parent before its children arrive). */
+  async saveTasks(rows) {
+    const ids = new Set(rows.map((r) => r.id)), done = new Set();
+    let left = rows;
+    while (left.length) {
+      const level = left.filter((r) => !r.parent_id || !ids.has(r.parent_id) || done.has(r.parent_id));
+      if (!level.length) throw new Error('Task steps are out of order.');
+      check(await sb.from('tasks').upsert(level));
+      level.forEach((r) => done.add(r.id));
+      left = left.filter((r) => !done.has(r.id));
+    }
+  },
+  async deleteTask(id) { check(await sb.from('tasks').delete().eq('id', id)); },
   async saveLog(row) { check(await sb.from('habit_logs').upsert(row)); },
 
   async saveReminder(habitId, userId, time) {
@@ -139,8 +153,8 @@ export const remote = {
     const byId = new Map(rates.map((r) => [r.post_id, r.pct]));
     return rows.map((p) => ({ ...p, likes: p.post_likes.map((l) => l.user_id), comment_count: p.comments?.[0]?.count || 0, pct: byId.get(p.id) ?? null }));
   },
-  async createPost(gid, body, habit) {
-    const row = { group_id: gid, body, habit_id: habit?.id || null, habit: habit ? { title: habit.title, icon: habit.icon, color: habit.color, goal_type: habit.goal_type, target: habit.target, unit: habit.unit, days: habit.days } : null };
+  async createPost(gid, body, habit, task) {
+    const row = { group_id: gid, body, task: task || null, habit_id: habit?.id || null, habit: habit ? { title: habit.title, icon: habit.icon, color: habit.color, goal_type: habit.goal_type, target: habit.target, unit: habit.unit, days: habit.days } : null };
     return check(await sb.from('posts').insert(row).select().single());
   },
   async deletePost(id) { check(await sb.from('posts').delete().eq('id', id)); },
@@ -169,7 +183,7 @@ export const remote = {
   /** Live changes. Handlers get the raw postgres_changes payload. */
   listen(handlers) {
     const ch = sb.channel('muna-sync');
-    for (const t of ['habits', 'habit_logs', 'habit_reminders', 'group_members', 'group_invites', 'group_requests', 'friendships', 'posts', 'comments', 'post_likes', 'comment_likes']) {
+    for (const t of ['habits', 'tasks', 'habit_logs', 'habit_reminders', 'group_members', 'group_invites', 'group_requests', 'friendships', 'posts', 'comments', 'post_likes', 'comment_likes']) {
       ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, (p) => handlers[t]?.(p));
     }
     ch.subscribe((status) => handlers.status?.(status));

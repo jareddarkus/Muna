@@ -56,7 +56,7 @@ for (const key of ['o', 'f']) {
 const UI = ['home-2','article','messages','user-circle','layout-dashboard','pennant','plus','minus','check','chevron-left','chevron-right',
   'x','search','pencil','flame','bolt','trash','copy','camera','users','user-plus','user-minus','user-check','heart','message-circle','send',
   'lock','world','dots','arrow-back-up','player-play','player-pause','bell','logout','refresh','shield-check','crown','circle-check',
-  'alert-circle','clock','calendar','photo','sparkles','arrow-left','door-exit','star','eye','filter','chart-bar','settings','share-3','user-x','photo-off'];
+  'alert-circle','clock','calendar','photo','sparkles','arrow-left','door-exit','star','eye','filter','chart-bar','settings','share-3','user-x','photo-off','list-check','subtask','checklist'];
 const ui = {};
 for (const n of UI) {
   const o = shards.o[shardOf(n)]?.[n], f = shards.f[shardOf(n)]?.[n];

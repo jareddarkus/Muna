@@ -6,12 +6,13 @@ const ME = { id: 'demo-user', username: 'you', display_name: 'You', avatar_url: 
 const needAccount = () => { throw new Error('Sign in with Google to use friends and groups.'); };
 
 function read() { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } }
-const db = Object.assign({ me: ME, habits: [], logs: [], reminders: [] }, read());
+const db = Object.assign({ me: ME, habits: [], tasks: [], logs: [], reminders: [] }, read());
+db.tasks ||= [];
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catch {} };
 
 export const demo = {
   name: 'demo',
-  async load() { return { me: db.me, habits: db.habits, logs: db.logs, reminders: db.reminders, profiles: [db.me], groups: [], members: [], friendships: [], invites: [], requests: [], rates: [] }; },
+  async load() { return { me: db.me, habits: db.habits, tasks: db.tasks, logs: db.logs, reminders: db.reminders, profiles: [db.me], groups: [], members: [], friendships: [], invites: [], requests: [], rates: [] }; },
   async loadSocial() { return { groups: [], members: [], friendships: [], invites: [], requests: [], rates: [] }; },
   async profilesFor() { return [db.me]; },
   async signOut() { localStorage.removeItem(KEY); },
@@ -22,6 +23,18 @@ export const demo = {
     save();
   },
   async deleteHabit(id) { db.habits = db.habits.filter((x) => x.id !== id); db.logs = db.logs.filter((l) => l.habit_id !== id); save(); },
+  async saveTasks(rows) {
+    for (const row of rows) {
+      const i = db.tasks.findIndex((x) => x.id === row.id);
+      if (i < 0) db.tasks.push({ created_at: new Date().toISOString(), ...row }); else db.tasks[i] = { ...db.tasks[i], ...row };
+    }
+    save();
+  },
+  async deleteTask(id) {
+    const gone = new Set([id]);
+    for (let grew = true; grew;) { grew = false; for (const t of db.tasks) if (t.parent_id && gone.has(t.parent_id) && !gone.has(t.id)) { gone.add(t.id); grew = true; } }
+    db.tasks = db.tasks.filter((t) => !gone.has(t.id)); save();
+  },
   async saveLog(row) {
     const l = db.logs.find((x) => x.habit_id === row.habit_id && x.user_id === row.user_id && x.day === row.day);
     if (l) l.value = row.value; else db.logs.push({ ...row });

@@ -4,6 +4,7 @@ import { VERSION } from './version.js';
 import { syncPush } from './push.js';
 import { state, subscribe, boot, signInGoogle, googleEnabled, enterDemo, pendingCount } from './store.js';
 import { mountHome } from './home.js';
+import { mountTasks } from './tasks.js';
 import { mountReports } from './reports.js';
 import { mountSocial } from './social.js';
 import { mountAccount } from './account.js';
@@ -43,34 +44,36 @@ function loginView() {
 
 let tabHandler = null;
 function shellView() {
-  const names = ['home', 'reports', 'social', 'account'];
+  const names = ['home', 'tasks', 'reports', 'social', 'account'];
   const views = names.map((n) => h('main', { class: 'screen', id: `view-${n}`, 'aria-label': n }));
   mountHome(views[0]);
-  const reports = mountReports(views[1]);
-  const social = mountSocial(views[2]);
-  mountAccount(views[3]);
+  mountTasks(views[1]);
+  const reports = mountReports(views[2]);
+  const social = mountSocial(views[3]);
+  mountAccount(views[4]);
 
   // bottom bar: icons are Tabler (filled home-2 / article / messages, outline user-circle), exact sizes from the Figma file
   const tabs = [
     ['Home', () => icon('home-2', { filled: true, size: 36 })],
+    ['Tasks', () => icon('list-check', { filled: true, size: 34 })],
     ['Reports', () => icon('article', { filled: true, size: 30 })],
     ['Social', () => icon('messages', { filled: true, size: 36 })],
     ['Account', () => icon('user-circle', { size: 36, stroke: 2 })],
   ];
   const badge = h('span', { class: 'tab-badge', hidden: true });
-  const buttons = tabs.map(([label, mk], i) => h('button', { type: 'button', class: 'tab', 'aria-label': label, onClick: () => go(i) }, h('span', { class: 'tab-ic' }, mk()), i === 2 ? badge : null));
+  const buttons = tabs.map(([label, mk], i) => h('button', { type: 'button', class: 'tab', 'aria-label': label, onClick: () => go(i) }, h('span', { class: 'tab-ic' }, mk()), i === 3 ? badge : null));
   const dot = h('span', { class: 'tab-dot' });
   const dock = h('nav', { class: 'dock' }, ...buttons, dot);
   let cur = -1;
   function go(i) {
     if (i === cur) { views[i].scrollTo({ top: 0, behavior: 'smooth' }); return; }
-    if (cur === 1) reports.hide();
+    if (cur === 2) reports.hide();
     cur = i;
     views.forEach((v, k) => { v.classList.toggle('active', k === i); v.inert = k !== i; });
     buttons.forEach((b, k) => { b.classList.toggle('active', k === i); b.setAttribute('aria-current', k === i ? 'page' : 'false'); });
     dock.style.setProperty('--i', i);
-    if (i === 1) reports.show();
-    if (i === 2) social.show();
+    if (i === 2) reports.show();
+    if (i === 3) social.show();
   }
   go(0);
   if (tabHandler) window.removeEventListener('muna:tab', tabHandler);

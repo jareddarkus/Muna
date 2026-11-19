@@ -1,5 +1,5 @@
 // Create / edit a habit, plus the icon picker (every Tabler icon, outline and filled).
-import { h, WEEKDAYS, debounce, toast, clamp, addDays, fmtDay } from './util.js';
+import { h, WEEKDAYS, debounce, toast, clamp } from './util.js';
 import { icon, habitIcon, loadIndex, searchIcons, parseRef } from './icons.js';
 import { COLORS, COLOR_NAMES, PALETTE, hex, colorKey } from './colors.js';
 import { openPanel, panelBar, segmented, dangerButton, toggleSwitch, iconCircle } from './ui.js';
@@ -56,15 +56,8 @@ export function openEditor(id = null) {
       e.currentTarget.classList.toggle('on', !on); e.currentTarget.setAttribute('aria-pressed', String(!on));
     } }, l)));
 
-  // start date
-  const startChips = h('div', { class: 'chips' }, [['Today', state.today], ['Tomorrow', addDays(state.today, 1)], ['Next week', addDays(state.today, 7)]].map(([l, d]) =>
-    h('button', { type: 'button', class: 'chip', 'data-d': d, onClick: () => { draft.start = d; startInput.value = d; paintStart(); } }, l)));
-  const startInput = h('input', { class: 'pill-input', type: 'date', value: draft.start, min: existing ? null : state.today, 'aria-label': 'Start date', onChange: (e) => { if (e.target.value) { draft.start = e.target.value; paintStart(); } } });
-  const startHint = h('p', { class: 'hint' });
-  function paintStart() {
-    startChips.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', c.dataset.d === draft.start));
-    startHint.textContent = draft.start > state.today ? `First appears on ${fmtDay(draft.start, { weekday: 'long', month: 'long', day: 'numeric' })}.` : draft.start === state.today ? 'Appears right away.' : `Started ${fmtDay(draft.start, { month: 'long', day: 'numeric', year: 'numeric' })}.`;
-  }
+  // start date: just the date field (today by default); tap it to change
+  const startInput = h('input', { class: 'pill-input date-input', type: 'date', value: draft.start, min: existing ? null : state.today, 'aria-label': 'Start date', onChange: (e) => { if (e.target.value) draft.start = e.target.value; } });
 
   // reminder
   const timeInput = h('input', { class: 'pill-input', type: 'time', value: draft.remind || '09:00', 'aria-label': 'Reminder time', onChange: (e) => { draft.remind = e.target.value || ''; } });
@@ -105,17 +98,17 @@ export function openEditor(id = null) {
       h('section', { class: 'field-card' }, h('h3', {}, 'Color'), swatches),
       h('section', { class: 'field-card' }, h('h3', {}, 'Goal'), seg.el, goalBody),
       h('section', { class: 'field-card' }, h('h3', {}, 'Repeat'), days),
-      h('section', { class: 'field-card' }, h('h3', {}, 'Starts'), startChips, startInput, startHint),
+      h('section', { class: 'field-card' }, h('h3', {}, 'Starts'), startInput),
       h('section', { class: 'field-card' }, h('div', { class: 'row-between' }, h('h3', {}, 'Reminder'), remindSwitch.el), timeInput, remindNote),
       save, del, h('div', { class: 'spacer' })));
-  paintIcon(); paintGoal(); paintStart(); paintRemind(); validate();
+  paintIcon(); paintGoal(); paintRemind(); validate();
   if (!existing) setTimeout(() => name.focus({ preventScroll: true }), 400);
 }
 
 // ───────────── icon picker ─────────────
 export function openIconPicker(draft, onPick) {
   const panel = openPanel({ cls: 'picker' });
-  panel.el.style.setProperty('--c', hex(draft.color));
+  panel.el.style.setProperty('--c', draft.color === 'task' ? PALETTE.darkGray : hex(draft.color));
   let { style } = parseRef(draft.icon);
   let query = '', results = [], shown = 0, all = null;
   const BATCH = 150;

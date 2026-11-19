@@ -10,6 +10,7 @@ export const state = {
   online: true,
   me: null,
   habits: new Map(),
+  tasks: new Map(), // id -> task / step / sub-step (parent_id links them)
   logs: new Map(), // "habit|user|day" -> value
   profiles: new Map(),
   groups: new Map(), // every group we know about (mine, invited to, searched)
@@ -20,6 +21,7 @@ export const state = {
   groupRates: new Map(),
   today: todayStr(),
   viewDay: todayStr(), // the day shown on the Today screen
+  taskDay: todayStr(), // the day shown on the Tasks screen
   reminders: new Map(), // habit id -> 'HH:MM' (mine)
 };
 
@@ -52,6 +54,35 @@ export function setViewDay(d) {
   emit();
 }
 export const shiftViewDay = (n) => setViewDay(addDays(state.viewDay, n));
+export function setTaskDay(d) {
+  const lo = addDays(state.today, -HISTORY_DAYS), hi = addDays(state.today, MAX_AHEAD);
+  state.taskDay = d < lo ? lo : d > hi ? hi : d;
+  emit();
+}
+export const shiftTaskDay = (n) => setTaskDay(addDays(state.taskDay, n));
+
+// ───────────── tasks ─────────────
+export const taskList = () => [...state.tasks.values()].sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id < b.id ? -1 : 1));
+export const childrenOf = (id) => taskList().filter((t) => t.parent_id === id);
+export const isTaskDone = (t) => !!t.done_at;
+/** Tasks, steps and sub-steps whose day is `day`. */
+export const tasksOn = (day) => taskList().filter((t) => t.day === day);
+/** Every id below a task (so a task can never be moved into itself). */
+export function descendantIds(id) {
+  const out = new Set(), walk = (x) => { for (const c of state.tasks.values()) if (c.parent_id === x && !out.has(c.id)) { out.add(c.id); walk(c.id); } };
+  walk(id); return out;
+}
+/** "Webcomic › Backgrounds" style path of a task's parents (empty for top-level). */
+export function taskPath(t) {
+  const names = []; let p = t.parent_id ? state.tasks.get(t.parent_id) : null, guard = 0;
+  while (p && guard++ < 50) { names.unshift(p.title); p = p.parent_id ? state.tasks.get(p.parent_id) : null; }
+  return names.join(' › ');
+}
+/** Steps done / steps in total directly below a task. */
+export function stepCount(id) {
+  const kids = childrenOf(id);
+  return { n: kids.length, done: kids.filter(isTaskDone).length };
+}
 export const profileOf = (id) => state.profiles.get(id) || { id, username: 'someone', display_name: '' };
 export const membersOf = (gid) => state.members.filter((m) => m.group_id === gid);
 
@@ -98,7 +129,7 @@ function saveCache() {
   cacheTimer = setTimeout(() => {
     try {
       localStorage.setItem(`muna.cache.${state.me.id}`, JSON.stringify({
-        me: state.me, habits: [...state.habits.values()], logs: [...state.logs].map(([k, value]) => { const [habit_id, user_id, day] = k.split('|'); return { habit_id, user_id, day, value }; }),
+        me: state.me, habits: [...state.habits.values()], tasks: [...state.tasks.values()], logs: [...state.logs].map(([k, value]) => { const [habit_id, user_id, day] = k.split('|'); return { habit_id, user_id, day, value }; }),
         reminders: [...state.reminders].map(([habit_id, remind_at]) => ({ habit_id, remind_at })), profiles: [...state.profiles.values()], groups: [...state.groups.values()], members: state.members, friendships: state.friendships, invites: state.invites, requests: state.requests, rates: [...state.groupRates.values()],
       }));
     } catch {}
@@ -117,6 +148,7 @@ function applySocial(s) {
 function hydrate(b) {
   state.me = b.me;
   state.habits = new Map(b.habits.map((x) => [x.id, x]));
+  state.tasks = new Map((b.tasks || []).map((x) => [x.id, x]));
   state.logs = new Map(b.logs.map((l) => [logKey(l.habit_id, l.user_id, l.day), l.value]));
   state.profiles = new Map(b.profiles.map((p) => [p.id, p]));
   applySocial(b);
@@ -192,7 +224,7 @@ export async function signOut() {
   await backend.signOut();
   if (state.me && !wasDemo) localStorage.removeItem(`muna.cache.${state.me.id}`);
   state.me = null; state.status = 'out'; state.demo = false; backend = remote;
-  state.habits.clear(); state.logs.clear(); state.groups.clear(); state.members = []; state.friendships = []; state.invites = []; state.requests = [];
+  state.habits.clear(); state.tasks.clear(); state.logs.clear(); state.groups.clear(); state.members = []; state.friendships = []; state.invites = []; state.requests = [];
   emit();
 }
 
@@ -208,6 +240,10 @@ function realtimeHandlers() {
   return {
     habits: (p) => {
       if (p.eventType === 'DELETE') state.habits.delete(p.old.id); else state.habits.set(p.new.id, p.new);
+      emit();
+    },
+    tasks: (p) => {
+      if (p.eventType === 'DELETE') state.tasks.delete(p.old.id); else state.tasks.set(p.new.id, p.new);
       emit();
     },
     habit_logs: (p) => {
@@ -248,6 +284,7 @@ function rollDay() {
   const t = todayStr();
   if (t === state.today) return;
   if (state.viewDay === state.today) state.viewDay = t;
+  if (state.taskDay === state.today) state.taskDay = t;
   state.today = t;
 }
 setInterval(() => { if (state.status === 'in') { const before = state.today; rollDay(); if (state.today !== before) emit(); } }, 30000);
@@ -286,6 +323,61 @@ export async function saveHabit(data) {
   try { await offlineGuard(backend.saveHabit(payload)); } catch (e) { if (isNew) state.habits.delete(row.id); else state.habits.set(row.id, prev); emit(); throw e; }
   return row.id;
 }
+// ── tasks ──
+export async function saveTask(data) {
+  const isNew = !data.id;
+  const row = { ...data, id: data.id || uuid() };
+  if (isNew) { row.owner_id = state.me.id; row.created_at = new Date().toISOString(); row.done_at ??= null; row.description ??= ''; row.parent_id ??= null; row.day ??= null; }
+  const prev = state.tasks.get(row.id);
+  const full = { ...prev, ...row };
+  state.tasks.set(row.id, full);
+  emit();
+  try { await offlineGuard(backend.saveTasks([full])); } catch (e) { if (isNew) state.tasks.delete(row.id); else state.tasks.set(row.id, prev); emit(); throw e; }
+  return row.id;
+}
+export const setTaskDone = (t, done) => saveTask({ id: t.id, done_at: done ? new Date().toISOString() : null });
+export async function deleteTask(id) {
+  const gone = [id, ...descendantIds(id)].map((x) => state.tasks.get(x)).filter(Boolean);
+  gone.forEach((t) => state.tasks.delete(t.id)); emit();
+  try { await offlineGuard(backend.deleteTask(id)); } catch (e) { gone.forEach((t) => state.tasks.set(t.id, t)); emit(); throw e; }
+}
+/** Copies a task / step / sub-step with everything below it. The copy sits next to the original unless a parent is given. */
+export async function duplicateTask(id, { parentId, day } = {}) {
+  const root = state.tasks.get(id);
+  if (!root) return null;
+  const now = Date.now(); let n = 0;
+  const rows = [];
+  const copy = (src, parent, isRoot) => {
+    const row = { id: uuid(), owner_id: state.me.id, parent_id: parent, title: isRoot ? `${src.title} copy`.slice(0, 80) : src.title, icon: src.icon, description: src.description || '',
+      day: isRoot && day !== undefined ? day : src.day, done_at: null, created_at: new Date(now + n++).toISOString() };
+    rows.push(row);
+    childrenOf(src.id).forEach((c) => copy(c, row.id, false));
+  };
+  copy(root, parentId === undefined ? root.parent_id : parentId, true);
+  rows.forEach((r) => state.tasks.set(r.id, r)); emit();
+  try { await offlineGuard(backend.saveTasks(rows)); } catch (e) { rows.forEach((r) => state.tasks.delete(r.id)); emit(); throw e; }
+  return rows[0].id;
+}
+/** Snapshot of a task and its steps for sharing (no days, nothing completed). */
+export function taskSnapshot(id) {
+  const t = state.tasks.get(id);
+  return { title: t.title, icon: t.icon, description: t.description || '', steps: childrenOf(id).map((c) => taskSnapshot(c.id)) };
+}
+/** Adds a shared task (and its steps) as a new top-level task due today. */
+export async function copyTask(snap) {
+  const count = (x) => (x.steps || []).length;
+  if (taskList().some((t) => !t.parent_id && !t.done_at && t.title.trim().toLowerCase() === String(snap.title).trim().toLowerCase() && childrenOf(t.id).length === count(snap))) throw new Error('You already have this task.');
+  const now = Date.now(); let n = 0; const rows = [];
+  const walk = (s, parent, isRoot) => {
+    const row = { id: uuid(), owner_id: state.me.id, parent_id: parent, title: String(s.title).slice(0, 80), icon: s.icon || 'outline:list-check', description: s.description || '', day: isRoot ? state.today : null, done_at: null, created_at: new Date(now + n++).toISOString() };
+    rows.push(row);
+    (s.steps || []).forEach((c) => walk(c, row.id, false));
+  };
+  walk(snap, null, true);
+  rows.forEach((r) => state.tasks.set(r.id, r)); emit();
+  try { await offlineGuard(backend.saveTasks(rows)); } catch (e) { rows.forEach((r) => state.tasks.delete(r.id)); emit(); throw e; }
+}
+
 export async function saveReminder(habitId, time) {
   const prev = state.reminders.get(habitId);
   if (prev === (time || undefined)) return;
@@ -349,7 +441,7 @@ export const groupOverview = async (gid) => { const rows = await backend.groupOv
 export const loadGroup = async (gid) => { const g = await backend.groupById(gid); if (g) { state.groups.set(g.id, g); emit(); } return g; };
 // posts
 export const listPosts = async (gid) => { const rows = await backend.listPosts(gid); await ensureProfiles(rows.map((p) => p.author_id)); return rows; };
-export const createPost = (gid, body, habit) => backend.createPost(gid, body, habit);
+export const createPost = (gid, body, habit, task) => backend.createPost(gid, body, habit, task);
 export const deletePost = (id) => backend.deletePost(id);
 export const togglePostLike = (id, liked) => backend.togglePostLike(id, state.me.id, liked);
 export const listComments = async (pid) => { const rows = await backend.listComments(pid); await ensureProfiles(rows.comments.map((c) => c.author_id)); return rows; };
