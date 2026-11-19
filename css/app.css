@@ -267,3 +267,16 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 @keyframes breathe { 50% { opacity: .55; transform: scale(.96); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 .screen > .field-card, .screen > .list-pill, .screen > .pill { margin-bottom: 15px; }
+
+/* ───────── confirmation pop-up ───────── */
+.dialog-wrap { position: fixed; inset: 0; z-index: 80; pointer-events: auto; display: grid; place-items: center; padding: 25px; }
+.dialog-wrap .backdrop { background: rgba(72, 71, 85, .45); }
+.dialog { position: relative; width: min(100%, 340px); background: #fff; border-radius: 30px; padding: 30px 25px 25px; text-align: center; display: grid; gap: 10px;
+  opacity: 0; transform: translateY(14px) scale(.94); transition: transform .4s var(--ease), opacity .25s ease-out; box-shadow: 0 0 33px rgba(127, 178, 255, .35); }
+.dialog-wrap.open .dialog { opacity: 1; transform: none; } .dialog-wrap.closing .dialog { opacity: 0; transform: translateY(8px) scale(.97); transition-duration: .2s; }
+.dialog h3 { font-size: 20px; font-weight: 700; color: var(--black); }
+.dialog p { font-size: 15px; color: var(--dgray); }
+.dialog-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+.dialog-actions .pill { height: 50px; padding: 0 10px; font-size: 16px; }
+.pill.danger-solid { background: var(--red); color: #fff; }
+.dialog-wrap.open .backdrop { opacity: 1; } .dialog-wrap.closing .backdrop { opacity: 0; transition-duration: .2s; }

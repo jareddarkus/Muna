@@ -96,7 +96,7 @@ export function openEditor(id = null) {
       panel.close();
     } catch (e) { toast(e.message || 'Could not save'); save.disabled = false; }
   }
-  const del = existing ? dangerButton('Delete habit', 'Tap again to delete', async () => { await deleteHabit(existing.id); panel.close(); }, 'block') : null;
+  const del = existing ? dangerButton('Delete habit', 'This removes the habit and all of its history. It cannot be undone.', async () => { await deleteHabit(existing.id); panel.close(); }, 'block') : null;
 
   panel.el.append(
     panelBar(panel, { title: existing ? 'Edit habit' : 'New habit' }),

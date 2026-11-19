@@ -2,7 +2,7 @@
 import { h, toast } from './util.js';
 import { icon } from './icons.js';
 import { hex } from './colors.js';
-import { avatar, openPanel, panelBar, dangerButton } from './ui.js';
+import { avatar, openPanel, panelBar, dangerButton, confirmDialog } from './ui.js';
 import { card, rateRing, habitSub } from './cards.js';
 import { state, subscribe, profileOf, memberRate, friendHabits, friendshipWith, addFriendById, acceptFriend, removeFriendship, isAdmin, membersOf, setRole, kickMember } from './store.js';
 
@@ -32,8 +32,8 @@ export function openProfile(uid, { groupId } = {}) {
     if (uid !== state.me.id) {
       if (!fr) actions.append(h('button', { type: 'button', class: 'pill primary', onClick: () => addFriendById(uid).then(() => toast('Request sent')).catch(fail) }, icon('user-plus', { size: 28, stroke: 1.8 }), 'Add friend'));
       else if (fr.status === 'pending' && fr.addressee_id === state.me.id) actions.append(h('button', { type: 'button', class: 'pill primary', onClick: () => acceptFriend(fr.id).catch(fail) }, 'Accept request'), h('button', { type: 'button', class: 'pill light', onClick: () => removeFriendship(fr.id).catch(fail) }, 'Decline'));
-      else if (fr.status === 'pending') actions.append(h('button', { type: 'button', class: 'pill light', onClick: () => removeFriendship(fr.id).catch(fail) }, 'Request sent · Cancel'));
-      else actions.append(h('span', { class: 'pill light static' }, icon('user-check', { size: 28, stroke: 1.8 }), 'Friends'), dangerButton('Remove', 'Tap again to remove', () => removeFriendship(fr.id).catch(fail), 'small'));
+      else if (fr.status === 'pending') actions.append(h('button', { type: 'button', class: 'pill light', onClick: async () => { if (await confirmDialog({ title: 'Cancel your request?', message: `Your friend request to @${p.username} will be withdrawn.`, confirm: 'Cancel request', cancel: 'Keep it' })) removeFriendship(fr.id).catch(fail); } }, 'Request sent · Cancel'));
+      else actions.append(h('span', { class: 'pill light static' }, icon('user-check', { size: 28, stroke: 1.8 }), 'Friends'), dangerButton('Remove friend', `You and @${p.username} will no longer see each other's habits.`, () => removeFriendship(fr.id).catch(fail), 'small', 'Remove'));
       // admin tools when opened from a group
       if (groupId && isAdmin(groupId)) {
         const m = membersOf(groupId).find((x) => x.user_id === uid);
@@ -41,7 +41,7 @@ export function openProfile(uid, { groupId } = {}) {
           actions.append(m.role === 'admin'
             ? h('button', { type: 'button', class: 'pill light', onClick: () => setRole(groupId, uid, 'member').then(() => toast('Not an admin anymore')).catch(fail) }, 'Remove admin')
             : h('button', { type: 'button', class: 'pill light', onClick: () => setRole(groupId, uid, 'admin').then(() => toast('Now an admin')).catch(fail) }, icon('crown', { size: 28, stroke: 1.8 }), 'Make admin'));
-          if (m.role !== 'admin') actions.append(dangerButton('Remove from group', 'Tap again to remove', async () => { await kickMember(groupId, uid).catch(fail); panel.close(); }, 'small'));
+          if (m.role !== 'admin') actions.append(dangerButton('Remove from group', `@${p.username} will lose access to this group's posts.`, async () => { await kickMember(groupId, uid).catch(fail); panel.close(); }, 'small', 'Remove'));
         }
       }
     }

@@ -2,7 +2,7 @@
 import { h, toast, debounce, timeAgo, goalLabel } from './util.js';
 import { icon, habitIcon } from './icons.js';
 import { PALETTE, COLORS, COLOR_NAMES, hex, rateColor } from './colors.js';
-import { avatar, segmented, openPanel, panelBar, dangerButton, toggleSwitch, iconCircle, closeAllPanels } from './ui.js';
+import { avatar, segmented, openPanel, panelBar, dangerButton, toggleSwitch, iconCircle, closeAllPanels, confirmDialog } from './ui.js';
 import { card, rateRing, habitSub, flag } from './cards.js';
 import { openIconPicker } from './editor.js';
 import { openProfile } from './profile.js';
@@ -73,7 +73,7 @@ export function openGroup(gid) {
         const rr = rateRing(); rr.set(m.pct); c.slot.append(rr.el);
         return c.el;
       });
-      content.replaceChildren(h('div', { class: 'cards' }, rows), h('div', { class: 'leave' }, dangerButton('Leave group', 'Tap again to leave', async () => { await leaveGroup(gid).catch(fail); panel.close(); }, 'block')));
+      content.replaceChildren(h('div', { class: 'cards' }, rows), h('div', { class: 'leave' }, dangerButton('Leave group', 'You will stop seeing its posts and members. You can join again later if it is public.', async () => { await leaveGroup(gid).catch(fail); panel.close(); }, 'block', 'Leave')));
       return;
     }
     // feed
@@ -108,7 +108,7 @@ export function openGroup(gid) {
     const canDelete = p.author_id === state.me.id || isAdmin(gid);
     return h('article', { class: 'post' },
       h('header', {}, h('button', { type: 'button', class: 'post-author', onClick: () => openProfile(p.author_id, { groupId: gid }) }, avatar(author, 44), h('span', {}, h('b', {}, `@${author.username}`), h('i', {}, timeAgo(p.created_at)))),
-        canDelete ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Delete post', onClick: async () => { try { await deletePost(p.id); posts = posts.filter((x) => x.id !== p.id); paintContent(); } catch (e) { fail(e); } } }, icon('trash', { size: 28, stroke: 1.8 })) : null),
+        canDelete ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Delete post', onClick: async () => { if (!(await confirmDialog({ title: 'Delete this post?', message: 'Its comments and likes will be removed too.' }))) return; try { await deletePost(p.id); posts = posts.filter((x) => x.id !== p.id); paintContent(); } catch (e) { fail(e); } } }, icon('trash', { size: 28, stroke: 1.8 })) : null),
       p.body ? h('p', { class: 'post-body' }, p.body) : null,
       p.habit ? habitAttachment(p) : null,
       h('footer', {}, likeBtn, comment));
@@ -150,7 +150,8 @@ function openComments(post, gid) {
   async function send() {
     const body = input.value.trim(); if (!body) return;
     sendBtn.disabled = true;
-    try { await addComment(post.id, body, replyTo?.id); input.value = ''; setReply(null); post.comment_count = (post.comment_count || 0) + 1; await load(); } catch (e) { fail(e); }
+    const mention = replyTo?.parent_id ? `@${profileOf(replyTo.author_id).username} ` : ''; // replying to a reply keeps the thread and tags them
+    try { await addComment(post.id, mention + body, replyTo ? replyTo.parent_id || replyTo.id : null); input.value = ''; setReply(null); post.comment_count = (post.comment_count || 0) + 1; await load(); } catch (e) { fail(e); }
     sendBtn.disabled = false;
   }
   function setReply(c) {
@@ -172,8 +173,8 @@ function openComments(post, gid) {
     const canDelete = c.author_id === state.me.id || isAdmin(gid);
     return h('div', { class: `comment ${reply ? 'reply' : ''}` }, avatar(author, reply ? 32 : 40),
       h('div', { class: 'comment-main' }, h('p', {}, h('b', {}, `@${author.username}`), ' ', c.body),
-        h('div', { class: 'comment-meta' }, h('i', {}, timeAgo(c.created_at)), !reply ? h('button', { type: 'button', onClick: () => setReply(c) }, 'Reply') : null,
-          canDelete ? h('button', { type: 'button', onClick: async () => { try { await deleteComment(c.id); post.comment_count = Math.max(0, (post.comment_count || 1) - 1); await load(); } catch (e) { fail(e); } } }, 'Delete') : null)), like);
+        h('div', { class: 'comment-meta' }, h('i', {}, timeAgo(c.created_at)), h('button', { type: 'button', onClick: () => setReply(c) }, 'Reply'),
+          canDelete ? h('button', { type: 'button', onClick: async () => { if (!(await confirmDialog({ title: 'Delete this comment?', message: reply ? '' : 'Replies to it will be removed too.' }))) return; try { await deleteComment(c.id); post.comment_count = Math.max(0, (post.comment_count || 1) - 1); await load(); } catch (e) { fail(e); } } }, 'Delete') : null)), like);
   }
   function paint() {
     const top = data.comments.filter((c) => !c.parent_id);
@@ -236,7 +237,7 @@ function openGroupAdmin(gid) {
     }));
   }
   unsub = subscribe(paintReqs);
-  const del = dangerButton('Delete group', 'Tap again to delete for everyone', async () => { await deleteGroup(gid).catch(fail); closeAllPanels(); }, 'block');
+  const del = dangerButton('Delete group', 'The group, all its posts and comments are removed for everyone. It cannot be undone.', async () => { await deleteGroup(gid).catch(fail); closeAllPanels(); }, 'block');
 
   panel.el.append(panelBar(panel, { title: 'Manage group' }), h('div', { class: 'panel-body' },
     h('div', { class: 'name-pill' }, circle, name),

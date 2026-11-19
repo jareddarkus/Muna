@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.0';
+export const VERSION = '2.0.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.0.1',
+    date: 'November 19, 2026',
+    items: ['You can reply to replies. They stay in the same thread and tag the person you answered.', 'A confirmation pop-up now appears before anything is deleted or removed.'],
+  },
   {
     version: '2.0',
     date: 'November 19, 2026',
