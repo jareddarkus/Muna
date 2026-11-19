@@ -11,8 +11,8 @@ const SUGGESTIONS = ['water', 'run', 'book', 'sleep', 'meditate', 'gym', 'food',
 export function openEditor(id = null) {
   const existing = id ? state.habits.get(id) : null;
   const draft = existing
-    ? { ...existing, color: colorKey(existing.color), days: [...existing.days], start: existing.created_on, remind: state.reminders.get(existing.id) || '', minutes: Math.round(existing.target / 60) || 30, count: existing.goal_type === 'count' ? existing.target : 8 }
-    : { title: '', icon: 'outline:star', color: 'purple', goal_type: 'count', unit: '', days: [0, 1, 2, 3, 4, 5, 6], minutes: 30, count: 1, start: state.today, remind: '' };
+    ? { ...existing, color: colorKey(existing.color), days: [...existing.days], start: existing.created_on, remind: state.reminders.get(existing.id) || '', minutes: existing.goal_type === 'time' ? Math.round(existing.target / 60) || 30 : 30, count: existing.goal_type === 'count' ? existing.target : 5 }
+    : { title: '', icon: 'outline:star', color: 'purple', goal_type: 'count', unit: '', days: [0, 1, 2, 3, 4, 5, 6], minutes: 30, count: 5, start: state.today, remind: '' };
 
   const panel = openPanel({ cls: 'editor', tapClose: true });
   const paint = () => panel.el.style.setProperty('--c', hex(draft.color));
