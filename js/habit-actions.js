@@ -31,7 +31,7 @@ export function habitItems(hb, { day = state.viewDay, extra = [] } = {}) {
   return [
     { label: 'Log', icon: 'circle-check', onSelect: () => openHabit(hb.id, day) },
     ...extra,
-    { label: 'Edit', icon: 'edit', onSelect: () => openEditor(hb.id) },
+    { label: 'Edit', icon: 'pencil', onSelect: () => openEditor(hb.id) },
     state.demo ? null : { label: 'Share to a group', icon: 'send', onSelect: () => shareHabit(hb) },
     v > 0 ? { label: 'Reset this day', icon: 'refresh', onSelect: () => setValue(hb, 0, day) } : null,
     { label: 'Delete', icon: 'trash', danger: true, onSelect: async () => {
