@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.8.1';
+export const VERSION = '2.9';
 
 export const CHANGELOG = [
+  {
+    version: '2.9',
+    date: 'November 19, 2026',
+    items: ['Account has a new Appearance switch: Light, Dark or System. Dark uses the same Muna palette (the palette black for surfaces, the light gray for text). System follows your phone.'],
+  },
   {
     version: '2.8.1',
     date: 'November 19, 2026',

@@ -1,7 +1,8 @@
 // Account: photo (with crop), username, About me, notifications, updates, sign out.
-import { h, toast } from './util.js';
+import { h, toast, tap } from './util.js';
 import { icon } from './icons.js';
-import { avatar, toggleSwitch, dangerButton, confirmDialog } from './ui.js';
+import { avatar, toggleSwitch, dangerButton, confirmDialog, segmented } from './ui.js';
+import { getTheme, setTheme } from './theme.js';
 import { attachHold } from './hold.js';
 import { openCropper } from './cropper.js';
 import { openUpdates, hasUnseenUpdate } from './updates.js';
@@ -61,6 +62,7 @@ export function mountAccount(root) {
     h('section', { class: 'profile-head' }, photo, file, rate),
     h('section', { class: 'field-card' }, h('h3', {}, 'Username'), h('div', { class: 'at' }, h('i', {}, '@'), userInput),
       h('div', { class: 'row-between' }, h('h3', {}, 'About me'), counter), aboutInput, err, saveBtn),
+    h('section', { class: 'field-card' }, h('h3', {}, 'Appearance'), segmented([['light', 'Light'], ['dark', 'Dark'], ['system', 'System']], getTheme(), (v) => { tap(); setTheme(v); }).el),
     h('section', { class: 'field-card' }, h('div', { class: 'row-between' }, h('h3', {}, 'Notifications'), notifSwitch.el), notifNote, h('div', { class: 'test-row' }, testBtn)),
     updates, out, h('div', { class: 'spacer' }));
 

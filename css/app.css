@@ -12,10 +12,17 @@
 :root {
   --red: #F88178; --orange: #FFC293; --yellow: #FCDA8B; --green: #91DCA4; --blue: #7FB2FF; --purple: #BFA6F5; --pink: #EAAEF3;
   --black: #484755; --dgray: #948DA2; --gray: #D9D3E6; --lgray: #F6F5F8; --white: #FFFFFF; --track: #E9E5EF;
+  --card: #FFFFFF; --veil: rgba(246, 245, 248, .55); --inverse: #484755; --on-inverse: #FFFFFF;
   --ease: cubic-bezier(.22, 1, .36, 1);
   --font: "Lexend", ui-rounded, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, sans-serif;
   color-scheme: light;
 }
+/* Dark theme: the same palette. Surfaces are the palette black (484755) and darker shades of it; text is the palette light gray. */
+:root[data-theme="dark"] {
+  --lgray: #3A3946; --card: #484755; --track: #5A5869; --gray: #625F72; --black: #F6F5F8; --veil: rgba(58, 57, 70, .6); --inverse: #F6F5F8; --on-inverse: #484755;
+  color-scheme: dark;
+}
+
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; height: 100%; background: var(--lgray); color: var(--black); font-family: var(--font); font-size: 16px; line-height: 1.4; font-weight: 400;
   -webkit-font-smoothing: antialiased; overscroll-behavior: none; overflow-x: hidden; touch-action: manipulation; -webkit-text-size-adjust: 100%; }
@@ -65,7 +72,7 @@ svg { display: block; flex: none; }
 
 /* ───────── cards ───────── */
 .cards { display: grid; gap: 10px; }
-.card { position: relative; display: flex; align-items: center; gap: 15px; height: 80px; padding: 10px; border-radius: 40px; background: #fff; cursor: pointer;
+.card { position: relative; display: flex; align-items: center; gap: 15px; height: 80px; padding: 10px; border-radius: 40px; background: var(--card); cursor: pointer;
   transition: transform .5s var(--ease), background .45s ease-out, box-shadow .3s; }
 .card:active { transform: scale(.98); }
 .card.enter { animation: rise .55s var(--ease) backwards; }
@@ -94,13 +101,13 @@ svg { display: block; flex: none; }
 
 /* ───────── bottom bar (126px, blue glow, tabs 72px apart) ───────── */
 .dock { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); z-index: 20; width: min(100%, 402px); height: 126px; padding-top: 30px;
-  display: grid; grid-template-columns: repeat(5, 72px); justify-content: center; background: #fff; border-radius: 63px 63px 0 0; box-shadow: 0 0 33px rgba(127, 178, 255, .5); --i: 0; }
+  display: grid; grid-template-columns: repeat(5, 72px); justify-content: center; background: var(--card); border-radius: 63px 63px 0 0; box-shadow: 0 0 33px rgba(127, 178, 255, .5); --i: 0; }
 .tab { position: relative; height: 30px; display: grid; place-items: center; color: var(--dgray); transition: color .3s ease-out, transform .25s var(--ease); }
 .tab:active { transform: scale(.88); }
 .tab.active { color: var(--blue); }
 .tab-ic { display: grid; width: 36px; height: 36px; place-items: center; }
 .tab-dot { position: absolute; top: 68px; left: calc(50% - 144px - 4px + var(--i) * 72px); width: 8px; height: 8px; border-radius: 50%; background: var(--blue); transition: left .45s var(--ease); }
-.tab-badge { position: absolute; top: -4px; right: 16px; width: 12px; height: 12px; border-radius: 50%; background: var(--red); border: 2px solid #fff; }
+.tab-badge { position: absolute; top: -4px; right: 16px; width: 12px; height: 12px; border-radius: 50%; background: var(--red); border: 2px solid var(--card); }
 
 /* ───────── panels ───────── */
 #layer { position: fixed; inset: 0; z-index: 50; pointer-events: none; }
@@ -119,7 +126,7 @@ svg { display: block; flex: none; }
 .panel-body.center { justify-items: center; text-align: center; }
 
 /* ───────── forms ───────── */
-.pill-input { display: block; width: 100%; height: 60px; border: 0; outline: 0; border-radius: 30px; background: #fff; padding: 0 25px; font-size: 16px; color: var(--black); -webkit-appearance: none; appearance: none; text-align: left; min-width: 0; }
+.pill-input { display: block; width: 100%; height: 60px; border: 0; outline: 0; border-radius: 30px; background: var(--card); padding: 0 25px; font-size: 16px; color: var(--black); -webkit-appearance: none; appearance: none; text-align: left; min-width: 0; }
 .pill-input::placeholder, .name-input::placeholder, .about-input::placeholder { color: var(--dgray); }
 .pill-input:focus, .about-input:focus { box-shadow: 0 0 0 2px var(--c, var(--purple)); }
 /* date and time fields: the value sits in the middle of the pill, both ways */
@@ -128,11 +135,11 @@ input[type="date"].pill-input::-webkit-date-and-time-value, input[type="time"].p
 input[type="date"].pill-input::-webkit-datetime-edit, input[type="time"].pill-input::-webkit-datetime-edit { padding: 0; text-align: center; }
 input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type="time"].pill-input::-webkit-datetime-edit-fields-wrapper { padding: 0; }
 .field-card .pill-input, .field-card .about-input { background: var(--lgray); }
-.about-input { width: 100%; border: 0; outline: 0; resize: none; border-radius: 24px; background: #fff; padding: 15px 20px; font-size: 16px; line-height: 1.4; }
-.name-pill { display: flex; align-items: center; gap: 15px; height: 60px; padding: 10px 25px 10px 10px; border-radius: 30px; background: #fff; }
+.about-input { width: 100%; border: 0; outline: 0; resize: none; border-radius: 24px; background: var(--card); padding: 15px 20px; font-size: 16px; line-height: 1.4; }
+.name-pill { display: flex; align-items: center; gap: 15px; height: 60px; padding: 10px 25px 10px 10px; border-radius: 30px; background: var(--card); }
 .name-circle { flex: none; width: 40px; height: 40px; border-radius: 50%; background: var(--c); color: #fff; display: grid; place-items: center; transition: background .3s; }
 .name-input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 18px; }
-.field-card { display: grid; gap: 15px; padding: 20px; border-radius: 30px; background: #fff; min-width: 0; }
+.field-card { display: grid; gap: 15px; padding: 20px; border-radius: 30px; background: var(--card); min-width: 0; }
 .field-card > h3, .row-between h3, .list-title { font-size: 14px; font-weight: 400; color: var(--dgray); }
 .list-title { margin: 20px 10px 10px; }
 .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -141,9 +148,9 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 .counter { font-size: 13px; color: var(--dgray); }
 .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
 .swatch { width: 36px; height: 36px; border-radius: 50%; transition: transform .3s var(--ease), box-shadow .3s var(--ease); }
-.swatch.on { transform: scale(1.08); box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--black); }
+.swatch.on { transform: scale(1.08); box-shadow: 0 0 0 3px var(--card), 0 0 0 5px var(--black); }
 .seg { position: relative; display: grid; grid-template-columns: repeat(var(--n, 2), 1fr); height: 50px; padding: 4px; border-radius: 25px; background: var(--track); --i: 0; }
-.seg-thumb { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / var(--n)); border-radius: 21px; background: #fff; transform: translateX(calc(var(--i) * 100%)); transition: transform .4s var(--ease); }
+.seg-thumb { position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / var(--n)); border-radius: 21px; background: var(--card); transform: translateX(calc(var(--i) * 100%)); transition: transform .4s var(--ease); }
 .seg-btn { position: relative; font-size: 16px; color: var(--dgray); transition: color .25s; } .seg-btn.on { color: var(--black); }
 .seg-wrap { margin: 0 10px 15px; }
 .goal-body { display: grid; gap: 15px; }
@@ -177,7 +184,7 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 /* ───────── habit screen ───────── */
 .habit-title { font-size: 24px; font-weight: 700; margin-top: 4px; }
 .habit-sub { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--dgray); }
-.day-pill { font-size: 14px; color: var(--dgray); background: #fff; padding: 6px 14px; border-radius: 16px; }
+.day-pill { font-size: 14px; color: var(--dgray); background: var(--card); padding: 6px 14px; border-radius: 16px; }
 .habit-panel .hero { margin: 10px auto 0; }
 .habit-unit { font-size: 14px; color: var(--dgray); }
 .habit-status { min-height: 20px; font-size: 14px; color: var(--black); }
@@ -188,7 +195,7 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 .pp { display: grid; } .pp > span { grid-area: 1 / 1; display: grid; transition: opacity .2s, transform .4s var(--ease); }
 .i-pause { opacity: 0; transform: scale(.6); } .running .i-pause { opacity: 1; transform: none; } .running .i-play { opacity: 0; transform: scale(.6); }
 .stat-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-bottom: 20px; }
-.stat-pill { background: #fff; border-radius: 22px; padding: 10px 18px; font-size: 14px; color: var(--dgray); } .stat-pill b { font-weight: 700; color: var(--black); }
+.stat-pill { background: var(--card); border-radius: 22px; padding: 10px 18px; font-size: 14px; color: var(--dgray); } .stat-pill b { font-weight: 700; color: var(--black); }
 .habit-panel .stat-row { margin: 10px 0 0; }
 
 /* ───────── social, profile, group ───────── */
@@ -208,7 +215,7 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 .leave { margin-top: 20px; }
 .composer .row-between { margin-top: 0; } .attach { min-height: 0; }
 .attach-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-radius: 20px; background: var(--lgray); color: var(--black); font-size: 14px; } .attach-chip button { display: grid; color: var(--dgray); }
-.post { display: grid; gap: 12px; padding: 20px; border-radius: 30px; background: #fff; }
+.post { display: grid; gap: 12px; padding: 20px; border-radius: 30px; background: var(--card); }
 .post > header { display: flex; align-items: center; justify-content: space-between; }
 .post-author { display: flex; align-items: center; gap: 12px; text-align: left; } .post-author span { display: grid; } .post-author b { color: var(--black); } .post-author i { font-style: normal; font-size: 13px; color: var(--dgray); }
 .post-body { font-size: 16px; white-space: pre-wrap; word-break: break-word; }
@@ -234,8 +241,8 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 .profile-head .photo-btn { position: relative; width: 110px; height: 110px; border-radius: 50%; transition: transform .3s var(--ease); } .photo-btn:active { transform: scale(.96); }
 .photo-edit { position: absolute; right: -2px; bottom: -2px; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--gray); color: #fff; border: 3px solid var(--lgray); }
 .at { position: relative; } .at i { position: absolute; left: 25px; top: 50%; transform: translateY(-50%); color: var(--dgray); font-style: normal; } .at .pill-input { padding-left: 42px; }
-.list-pill { display: flex; align-items: center; gap: 10px; width: 100%; height: 60px; padding: 0 25px; border-radius: 30px; background: #fff; text-align: left; } .list-pill > span:first-child { flex: 1; }
-.ver-chip { padding: 4px 10px; border-radius: 12px; background: var(--black); color: #fff; font-size: 12px; }
+.list-pill { display: flex; align-items: center; gap: 10px; width: 100%; height: 60px; padding: 0 25px; border-radius: 30px; background: var(--card); text-align: left; } .list-pill > span:first-child { flex: 1; }
+.ver-chip { padding: 4px 10px; border-radius: 12px; background: var(--inverse); color: var(--on-inverse); font-size: 12px; }
 .upd-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); }
 .ver-hero { display: grid; justify-items: center; gap: 4px; padding: 10px 0 15px; } .ver-big { font-size: 48px; font-weight: 700; color: var(--purple); line-height: 1.1; } .ver-sub { font-size: 14px; color: var(--dgray); }
 .release ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 15px; } .release li::marker { color: var(--dgray); }
@@ -247,7 +254,7 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 .picker-count { font-size: 13px; color: var(--dgray); padding-left: 6px; }
 .picker-scroll { padding-top: 10px; }
 .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 8px; }
-.icon-cell { aspect-ratio: 1; border-radius: 50%; background: #fff; display: grid; place-items: center; color: var(--black); transition: transform .2s var(--ease), background .2s; content-visibility: auto; contain-intrinsic-size: 56px; } .icon-cell:active { transform: scale(.9); }
+.icon-cell { aspect-ratio: 1; border-radius: 50%; background: var(--card); display: grid; place-items: center; color: var(--black); transition: transform .2s var(--ease), background .2s; content-visibility: auto; contain-intrinsic-size: 56px; } .icon-cell:active { transform: scale(.9); }
 .icon-cell.on { background: var(--c); color: #fff; }
 .sentinel { height: 1px; }
 
@@ -256,12 +263,12 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 .login-top { display: grid; justify-items: center; gap: 10px; text-align: center; } .login-top h1 { font-size: 44px; font-weight: 700; margin-top: 10px; } .login-top p { color: var(--dgray); font-size: 18px; }
 .login-top .logo { animation: rise .8s var(--ease) backwards; }
 .login-actions { width: 100%; display: grid; gap: 12px; justify-items: center; }
-.pill.google { width: 100%; height: 60px; background: #fff; color: var(--black); box-shadow: 0 0 33px rgba(127, 178, 255, .35); } .pill.google.busy { opacity: .6; }
+.pill.google { width: 100%; height: 60px; background: var(--card); color: var(--black); box-shadow: 0 0 33px rgba(127, 178, 255, .35); } .pill.google.busy { opacity: .6; }
 .login-note { font-size: 14px; color: var(--dgray); text-align: center; max-width: 320px; }
 .link { color: var(--dgray); font-size: 15px; padding: 10px; }
 #splash { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: var(--lgray); transition: opacity .4s ease-out; } #splash.hide { opacity: 0; pointer-events: none; }
 #splash .logo { animation: breathe 1.6s ease-in-out infinite; }
-.toast { position: fixed; z-index: 100; left: 50%; top: calc(env(safe-area-inset-top) + 12px); transform: translate(-50%, -140%); opacity: 0; visibility: hidden; background: var(--black); color: #fff; padding: 12px 20px; border-radius: 24px; font-size: 15px; max-width: min(92vw, 380px); text-align: center; pointer-events: none;
+.toast { position: fixed; z-index: 100; left: 50%; top: calc(env(safe-area-inset-top) + 12px); transform: translate(-50%, -140%); opacity: 0; visibility: hidden; background: var(--inverse); color: var(--on-inverse); padding: 12px 20px; border-radius: 24px; font-size: 15px; max-width: min(92vw, 380px); text-align: center; pointer-events: none;
   transition: transform .5s var(--ease), opacity .25s ease-out, visibility 0s .5s; }
 .toast.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; transition: transform .5s var(--ease), opacity .25s ease-out, visibility 0s; box-shadow: 0 10px 24px -10px rgba(72, 71, 85, .5); }
 
@@ -274,7 +281,7 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 /* ───────── confirmation pop-up ───────── */
 .dialog-wrap { position: fixed; inset: 0; z-index: 80; pointer-events: auto; display: grid; place-items: center; padding: 25px; }
 .dialog-wrap .backdrop { background: rgba(72, 71, 85, .45); }
-.dialog { position: relative; width: min(100%, 340px); background: #fff; border-radius: 30px; padding: 30px 25px 25px; text-align: center; display: grid; gap: 10px;
+.dialog { position: relative; width: min(100%, 340px); background: var(--card); border-radius: 30px; padding: 30px 25px 25px; text-align: center; display: grid; gap: 10px;
   opacity: 0; transform: translateY(14px) scale(.94); transition: transform .4s var(--ease), opacity .25s ease-out; box-shadow: 0 0 33px rgba(127, 178, 255, .35); }
 .dialog-wrap.open .dialog { opacity: 1; transform: none; } .dialog-wrap.closing .dialog { opacity: 0; transform: translateY(8px) scale(.97); transition-duration: .2s; }
 .dialog h3 { font-size: 20px; font-weight: 700; color: var(--black); }
@@ -291,14 +298,14 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 .card.holdable:active, .step-row.holdable:active { transform: none; }
 .card.holdable.hold-press:active, .step-row.holdable.hold-press:active { transform: scale(.965); }
 .hold-wrap { position: fixed; inset: 0; z-index: 70; pointer-events: none; }
-.hold-overlay { position: absolute; inset: 0; background: rgba(246, 245, 248, 0); -webkit-backdrop-filter: blur(0px); backdrop-filter: blur(0px);
+.hold-overlay { position: absolute; inset: 0; background: transparent; -webkit-backdrop-filter: blur(0px); backdrop-filter: blur(0px);
   transition: background .4s ease-out, -webkit-backdrop-filter .4s ease-out, backdrop-filter .4s ease-out; }
-.hold-overlay.on { background: rgba(246, 245, 248, .55); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.hold-overlay.on { background: var(--veil); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
 .hold-clone { position: fixed; pointer-events: none; transform-origin: center; transition: transform .46s cubic-bezier(.2, .9, .25, 1.25), box-shadow .4s ease-out; animation: none !important; box-shadow: 0 0 0 rgba(72, 71, 85, 0); }
 .hold-clone.lifted { transform: scale(1.06); box-shadow: 0 22px 46px -14px rgba(72, 71, 85, .42); }
 .hold-clone.settling { transition: transform .3s var(--ease), box-shadow .3s ease-out; }
-.hold-clone.comment, .hold-clone.post-row { background: #fff; border-radius: 24px; padding: 12px; }
-.hold-menu { position: fixed; width: 236px; padding: 8px; background: #fff; border-radius: 28px; display: grid; gap: 2px; pointer-events: auto;
+.hold-clone.comment, .hold-clone.post-row { background: var(--card); border-radius: 24px; padding: 12px; }
+.hold-menu { position: fixed; width: 236px; padding: 8px; background: var(--card); border-radius: 28px; display: grid; gap: 2px; pointer-events: auto;
   box-shadow: 0 0 33px rgba(127, 178, 255, .4), 0 12px 30px -12px rgba(72, 71, 85, .3); opacity: 0; transform: scale(.82); transition: transform .46s cubic-bezier(.2, .9, .25, 1.2), opacity .2s ease-out; }
 .hold-menu.on { opacity: 1; transform: none; }
 .hold-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; height: 52px; padding: 0 18px; border-radius: 22px; color: var(--black); font-size: 16px; text-align: left; transition: background .2s; }
@@ -342,7 +349,7 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 .cal-drop { display: grid; grid-template-rows: 0fr; opacity: 0; margin: 0 0 0; transition: grid-template-rows .5s var(--ease), opacity .35s ease-out, margin .5s var(--ease); }
 .cal-drop.open { grid-template-rows: 1fr; opacity: 1; margin: 0 0 28px; }
 .cal-clip { min-height: 0; overflow: hidden; }
-.cal-card { background: #fff; border-radius: 30px; padding: 14px 14px 16px; transform: translateY(-14px); transition: transform .5s var(--ease); }
+.cal-card { background: var(--card); border-radius: 30px; padding: 14px 14px 16px; transform: translateY(-14px); transition: transform .5s var(--ease); }
 .cal-drop.open .cal-card { transform: none; }
 .cal-head { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; margin-bottom: 6px; }
 .cal-month { text-align: center; font-size: 18px; font-weight: 700; }
@@ -379,7 +386,7 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 .task-panel .panel-body { gap: 12px; }
 .task-about { width: 100%; text-align: left; font-size: 15px; line-height: 1.45; color: var(--black); white-space: pre-wrap; overflow-wrap: anywhere; }
 .step-list { width: 100%; display: grid; gap: 8px; }
-.step-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 8px 16px 8px 10px; border-radius: 26px; background: #fff; text-align: left; cursor: pointer; transition: transform .2s var(--ease), background .3s; }
+.step-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 8px 16px 8px 10px; border-radius: 26px; background: var(--card); text-align: left; cursor: pointer; transition: transform .2s var(--ease), background .3s; }
 .step-row:active { transform: scale(.98); }
 .step-list.edit .step-row { background: var(--lgray); }
 .step-box { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: transparent; box-shadow: inset 0 0 0 2.5px var(--gray); transition: background .3s, color .3s, box-shadow .3s; }
@@ -392,7 +399,7 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 .parent-list { display: grid; gap: 8px; }
 .parent-row.on { box-shadow: 0 0 0 2px var(--dgray); }
 .parent-row > span { flex: 1; }
-.hold-clone.step-row { background: #fff; }
+.hold-clone.step-row { background: var(--card); }
 .field-card .list-pill { background: var(--lgray); }
 
 /* ───────── no text selection, no zoom (this is an app, not a web page) ───────── */
