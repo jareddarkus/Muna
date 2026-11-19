@@ -1,7 +1,16 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.1';
+export const VERSION = '2.1.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.1.1',
+    date: 'November 19, 2026',
+    items: [
+      'Removed the day streak. Only the 21-day rate is shown now.',
+      'Back and view buttons are now circles, like every other round button.',
+      'Habit screen: Edit on the left and an X to close on the right, with more room around them.',
+    ],
+  },
   {
     version: '2.1',
     date: 'November 19, 2026',

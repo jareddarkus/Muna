@@ -5,7 +5,7 @@ import { PALETTE, hex, rateColor } from './colors.js';
 import { ring, openPanel, panelBar, iconCircle } from './ui.js';
 import { flag, habitSub } from './cards.js';
 import { habitRate } from './rates.js';
-import { state, subscribe, valueOf, progressOf, isDone, streakOf, bump, setValue } from './store.js';
+import { state, subscribe, valueOf, progressOf, isDone, bump, setValue } from './store.js';
 import { liveValue, isRunning, toggle, onTick } from './timer.js';
 import { openEditor } from './editor.js';
 
@@ -17,6 +17,7 @@ export function openHabit(id, day = state.viewDay) {
   const panel = openPanel({ cls: 'habit-panel', onClose: () => { unsub(); unTick(); } });
 
   const edit = h('button', { type: 'button', class: 'pill small', onClick: () => { panel.close(); setTimeout(() => openEditor(id), 150); } }, 'Edit');
+  const closeBtn = h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Close', onClick: () => panel.close() }, icon('x', { size: 28, stroke: 1.8 }));
   const circleHost = h('div', { class: 'habit-circle-host' });
   const title = h('h1', { class: 'habit-title' });
   const sub = h('p', { class: 'habit-sub' });
@@ -25,13 +26,13 @@ export function openHabit(id, day = state.viewDay) {
   const unit = h('span', { class: 'habit-unit' });
   const center = h('div', { class: 'hero-center col' }, num, unit);
   const controls = h('div', { class: 'habit-controls' });
-  const rateEl = h('span', { class: 'stat-pill' }), streakEl = h('span', { class: 'stat-pill' });
+  const rateEl = h('span', { class: 'stat-pill' });
   const dayPill = { hidden: isToday, textContent: '' };
 
-  panel.el.append(panelBar(panel, { right: edit }),
+  panel.el.append(panelBar(panel, { left: edit, right: closeBtn }),
     h('div', { class: 'panel-body center' },
       h('div', { class: 'habit-head' }, circleHost, h('div', { class: 'habit-head-text' }, title, sub)),
-      h('div', { class: 'hero compact' }, r.el, center), controls, h('div', { class: 'stat-row' }, rateEl, streakEl)));
+      h('div', { class: 'hero compact' }, r.el, center), controls, h('div', { class: 'stat-row' }, rateEl)));
 
   let built = null, shownIcon = null;
   const round = (cls, label, ic, fn) => h('button', { type: 'button', class: `big-btn ${cls}`, 'aria-label': label, onClick: () => { tap(); fn(); } }, ic);
@@ -70,8 +71,6 @@ export function openHabit(id, day = state.viewDay) {
     panel.el.classList.toggle('done', done);
     const pct = habitRate(hb);
     rateEl.replaceChildren(h('b', { style: { color: rateColor(pct) } }, pct == null ? '–' : `${pct}%`), ' last 21 days');
-    const s = streakOf(hb);
-    streakEl.replaceChildren(h('b', {}, String(s)), s === 1 ? ' day streak' : ' day streak');
   }
   unsub = subscribe(update);
   unTick = onTick(update);

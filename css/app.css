@@ -38,7 +38,7 @@ svg { display: block; flex: none; }
 .top-bar.center-only { margin-bottom: 30px; }
 .screen-title { text-align: center; font-size: 20px; font-weight: 700; }
 .sq-btn, .circle-btn { width: 40px; height: 40px; display: grid; place-items: center; color: #fff; transition: transform .25s var(--ease), opacity .2s; }
-.sq-btn { border-radius: 10px; } .circle-btn { border-radius: 50%; }
+.sq-btn, .circle-btn { border-radius: 50%; }
 .sq-btn.gray, .circle-btn.gray { background: var(--gray); }
 .circle-btn.primary { background: var(--c, var(--purple)); }
 .sq-btn:active, .circle-btn:active { transform: scale(.9); }
@@ -312,3 +312,6 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .habit-panel .stat-row { margin: 0; gap: 8px; } .habit-panel .stat-pill { padding: 8px 14px; font-size: 13px; }
 .picker-habit.short.panel, .panel.short { height: auto; max-height: 60dvh; }
 .habit-head { margin-top: 12px; }
+
+.habit-panel .panel-bar { height: 92px; padding: 32px 32px 0; }
+.habit-panel .panel-bar .sq-btn { width: 44px; height: 44px; }
