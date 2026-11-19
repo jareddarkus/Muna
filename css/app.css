@@ -204,7 +204,9 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 .notifs .cards, .notifs { display: block; } .notifs .cards { display: grid; }
 .mini-actions { display: flex; gap: 8px; margin-right: 10px; }
 .mini-btn { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: var(--gray); transition: transform .2s var(--ease); } .mini-btn:active { transform: scale(.88); }
-.mini-btn.yes { background: var(--green); } .mini-btn.add { background: var(--blue); margin-right: 10px; } .mini-btn.no { background: var(--gray); }
+.mini-btn.yes { background: var(--green); } .mini-btn.add { background: var(--blue); } .mini-btn.no { background: var(--gray); }
+/* a small round button sits in the middle of the pill's rounded end, level with the 60px rings: 40px from the edge */
+.card-right > .mini-btn { margin-right: 10px; }
 .status-tag { font-size: 13px; color: var(--dgray); margin-right: 14px; }
 .profile-head { display: grid; justify-items: center; gap: 10px; text-align: center; margin-bottom: 20px; }
 .person-name { font-size: 20px; font-weight: 700; } .about { font-size: 15px; max-width: 300px; } .about.muted { color: var(--dgray); } .meta { font-size: 14px; color: var(--dgray); }
