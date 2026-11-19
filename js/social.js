@@ -2,7 +2,7 @@
 import { h, toast, debounce } from './util.js';
 import { icon, habitIcon } from './icons.js';
 import { PALETTE, COLORS, COLOR_NAMES, hex } from './colors.js';
-import { avatar, segmented, openPanel, panelBar, toggleSwitch } from './ui.js';
+import { avatar, segmented, openPanel, panelBar, toggleSwitch, confirmDialog } from './ui.js';
 import { card, rateRing } from './cards.js';
 import { openIconPicker } from './editor.js';
 import { openGroup } from './group.js';
@@ -110,7 +110,7 @@ export function mountSocial(root) {
       const fr = friendsOf();
       out.push(...section('Friends', fr.map((f) => personCard(f.other, { right: rateFor(f.other.id) }))));
       const sent = outgoingRequests();
-      out.push(...section('Sent', sent.map((f) => personCard(f.other, { sub: 'Request sent', right: miniBtn('no', 'x', 'Cancel', () => removeFriendship(f.id).catch(fail)) }))));
+      out.push(...section('Sent', sent.map((f) => personCard(f.other, { sub: 'Request sent', right: miniBtn('no', 'x', 'Cancel request', async () => { if (await confirmDialog({ title: 'Cancel your request?', message: `Your friend request to @${f.other.username} will be withdrawn.`, confirm: 'Cancel request', cancel: 'Keep it' })) removeFriendship(f.id).catch(fail); }) }))));
       if (!fr.length && !sent.length) out.push(h('p', { class: 'empty-text' }, 'Search a username to add friends'));
     } else {
       const mine = myGroups();

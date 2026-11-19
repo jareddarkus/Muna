@@ -49,7 +49,7 @@ export function mountAccount(root) {
 
   const updDot = h('span', { class: 'upd-dot', hidden: !hasUnseenUpdate() });
   const updates = h('button', { type: 'button', class: 'list-pill', onClick: () => openUpdates(() => { updDot.hidden = true; }) }, h('span', {}, 'Updates'), h('span', { class: 'ver-chip' }, `v${VERSION}`), updDot);
-  const out = dangerButton('Sign out', 'Tap again to sign out', () => signOut(), 'block');
+  const out = dangerButton('Sign out', 'You can sign back in with Google any time.', () => signOut(), 'block', 'Sign out');
 
   root.append(
     h('header', { class: 'top-bar center-only' }, h('span'), h('h2', { class: 'screen-title' }, 'Account'), h('span')),

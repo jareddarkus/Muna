@@ -96,16 +96,37 @@ export function panelBar(api, { title, right, back = true } = {}) {
     h('h2', {}, title || ''), h('div', { class: 'bar-right' }, right));
 }
 
-/** Two-tap destructive button: first tap arms it, second confirms. */
-export function dangerButton(label, armedLabel, onConfirm, cls = '') {
-  let armed = false, timer;
+/** Confirmation pop-up. Resolves true when the person confirms, false on cancel / outside tap / Escape. */
+export function confirmDialog({ title, message = '', confirm = 'Delete', cancel = 'Cancel' }) {
+  return new Promise((resolve) => {
+    const prevFocus = document.activeElement;
+    const done = (v) => {
+      wrap.classList.remove('open'); wrap.classList.add('closing');
+      document.removeEventListener('keydown', onKey, true);
+      setTimeout(() => wrap.remove(), 260);
+      prevFocus?.focus?.({ preventScroll: true });
+      resolve(v);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); done(false); } };
+    const ok = h('button', { type: 'button', class: 'pill danger-solid', onClick: () => done(true) }, confirm);
+    const no = h('button', { type: 'button', class: 'pill light', onClick: () => done(false) }, cancel);
+    const wrap = h('div', { class: 'dialog-wrap', role: 'alertdialog', 'aria-modal': 'true', 'aria-label': title },
+      h('div', { class: 'backdrop', onClick: () => done(false) }),
+      h('div', { class: 'dialog' }, h('h3', {}, title), message ? h('p', {}, message) : null, h('div', { class: 'dialog-actions' }, no, ok)));
+    document.getElementById('layer').append(wrap);
+    document.addEventListener('keydown', onKey, true);
+    requestAnimationFrame(() => requestAnimationFrame(() => { wrap.classList.add('open'); no.focus({ preventScroll: true }); }));
+  });
+}
+
+/** Destructive button: opens the confirmation pop-up first. `message` explains what will happen. */
+export function dangerButton(label, message, onConfirm, cls = '', confirm = 'Delete') {
   const b = h('button', { type: 'button', class: `pill danger ${cls}` }, label);
   b.addEventListener('click', async () => {
-    if (!armed) { armed = true; b.classList.add('armed'); b.textContent = armedLabel; timer = setTimeout(reset, 3000); return; }
-    clearTimeout(timer); b.disabled = true;
-    try { await onConfirm(); } catch (e) { b.disabled = false; reset(); throw e; }
+    if (!(await confirmDialog({ title: `${label}?`, message, confirm: confirm === 'Delete' && !/^delete/i.test(label) ? label.replace(/\?$/, '') : confirm }))) return;
+    b.disabled = true;
+    try { await onConfirm(); } catch (e) { console.error(e); } finally { b.disabled = false; }
   });
-  function reset() { armed = false; b.classList.remove('armed'); b.textContent = label; }
   return b;
 }
 
