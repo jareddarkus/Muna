@@ -20,7 +20,7 @@ export function openHabit(id, day = state.viewDay) {
   let unsub = () => {}, unTick = () => {};
   const panel = openPanel({ cls: 'habit-panel', onClose: () => { unsub(); unTick(); } });
 
-  const edit = h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Edit habit', onClick: () => { panel.close(); setTimeout(() => openEditor(id), 150); } }, icon('edit', { size: 26, stroke: 1.8 }));
+  const edit = h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Edit habit', onClick: () => { panel.close(); setTimeout(() => openEditor(id), 150); } }, icon('pencil', { size: 26, stroke: 1.8 }));
   const titleEl = h('span', { class: 'habit-bar-title' });
   const closeBtn = h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Close', onClick: () => panel.close() }, icon('x', { size: 28, stroke: 1.8 }));
   const r = ring({ size: 130, stroke: 10, color: PALETTE.purple, glow: true, cls: 'hero-ring small' });

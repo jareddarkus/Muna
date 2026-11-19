@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.1.2';
+export const VERSION = '2.1.3';
 
 export const CHANGELOG = [
+  {
+    version: '2.1.3',
+    date: 'November 19, 2026',
+    items: ['Every Edit button now uses the plain pencil icon.'],
+  },
   {
     version: '2.1.2',
     date: 'November 19, 2026',
