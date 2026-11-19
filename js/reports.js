@@ -3,7 +3,7 @@ import { h, tween, shortDay } from './util.js';
 import { PALETTE, hex, rateColor } from './colors.js';
 import { ring } from './ui.js';
 import { card, rateRing, habitSub, flag } from './cards.js';
-import { state, subscribe, habitList, streakOf, bestStreakOf } from './store.js';
+import { state, subscribe, habitList } from './store.js';
 import { attachHold } from './hold.js';
 import { habitItems } from './habit-actions.js';
 import { overallRate, habitRate, habitParts, pctOf, WINDOW } from './rates.js';
@@ -18,16 +18,15 @@ export function mountReports(root) {
   const caption = h('p', { class: 'caption' });
   const hero = h('section', { class: 'hero' }, r.el, h('div', { class: 'hero-center' }, num, unit));
   const dots = h('div', { class: 'dots', 'aria-label': 'Last 21 days' });
-  const stats = h('div', { class: 'stat-row' });
   const list = h('div', { class: 'cards' });
   const empty = h('p', { class: 'empty-text' }, 'No habits');
-  root.append(header, hero, caption, dots, stats, list, empty);
+  root.append(header, hero, caption, dots, list, empty);
 
   const rows = new Map();
   function render() {
     const all = habitList();
     empty.hidden = all.length > 0;
-    [hero, caption, dots, stats, list].forEach((e) => (e.hidden = all.length === 0));
+    [hero, caption, dots, list].forEach((e) => (e.hidden = all.length === 0));
     if (!all.length) return;
     if (filter && !state.habits.has(filter)) filter = null;
     const hb = filter ? state.habits.get(filter) : null;
@@ -54,11 +53,6 @@ export function mountReports(root) {
       }
       return h('span', { class: cls, title: label, style: bg ? { background: bg } : {} });
     }));
-
-    // stats for the selection
-    const streak = hb ? streakOf(hb) : Math.max(0, ...all.map(streakOf));
-    const best = hb ? bestStreakOf(hb) : Math.max(0, ...all.map(bestStreakOf));
-    stats.replaceChildren(h('span', { class: 'stat-pill' }, h('b', {}, String(streak)), ' current streak'), h('span', { class: 'stat-pill' }, h('b', {}, String(best)), ' best streak'));
 
     // habit cards
     for (const [id, c] of rows) if (!state.habits.has(id)) { c.el.remove(); rows.delete(id); }

@@ -90,9 +90,9 @@ document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && stack.le
 export const closeAllPanels = () => [...stack].forEach((p) => p.close());
 
 /** Top bar used by every panel: round-square back button on the left, optional title and right slot. */
-export function panelBar(api, { title, right, back = true } = {}) {
+export function panelBar(api, { title, right, left, back = true } = {}) {
   return h('header', { class: 'panel-bar' },
-    back ? h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Back', onClick: () => api.close() }, icon('chevron-left', { size: 30, stroke: 1.6 })) : h('span'),
+    left || (back ? h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Back', onClick: () => api.close() }, icon('chevron-left', { size: 30, stroke: 1.6 })) : h('span')),
     h('h2', {}, title || ''), h('div', { class: 'bar-right' }, right));
 }
 
