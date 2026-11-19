@@ -407,3 +407,5 @@ img { -webkit-user-drag: none; user-drag: none; }
 .card.ghost .card-circle { background: var(--gray); color: #fff; }
 .card.ghost .card-title, .card.ghost .card-sub { color: var(--dgray); }
 .ghost-ring { width: 60px; height: 60px; border-radius: 50%; background: var(--gray); }
+
+.hero.compact { cursor: pointer; transition: transform .25s var(--ease); } .hero.compact.filling { transform: scale(1.05); } .hero.compact.filling .ring-bar { transition: none; }
