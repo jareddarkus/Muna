@@ -27,6 +27,7 @@ export const remote = {
     const redirectTo = location.origin + location.pathname.replace(/index\.html$/, '');
     check(await sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo, queryParams: { prompt: 'select_account' } } }));
   },
+  async signInIdToken(token, nonce) { check(await sb.auth.signInWithIdToken({ provider: 'google', token, nonce })); },
   async signOut() { await sb.auth.signOut(); },
   async googleEnabled() {
     try {

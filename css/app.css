@@ -419,3 +419,6 @@ img { -webkit-user-drag: none; user-drag: none; }
 .ghost-ring { width: 60px; height: 60px; border-radius: 50%; background: var(--gray); }
 
 .hero.compact { cursor: pointer; transition: transform .25s var(--ease); } .hero.compact.filling { transform: scale(1.05); } .hero.compact.filling .ring-bar { transition: none; }
+
+.gsi { display: grid; justify-items: center; min-height: 40px; color-scheme: light; } .gsi:empty { display: none; }
+.login-actions .link { font-size: 14px; color: var(--dgray); }
