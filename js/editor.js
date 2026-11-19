@@ -42,7 +42,7 @@ export function openEditor(id = null) {
   }
   function paintGoal() {
     goalBody.replaceChildren();
-    if (draft.goal_type === 'time') goalBody.append(h('p', { class: 'hint' }, 'How long, each day?'), stepper(() => draft.minutes, (v) => (draft.minutes = v), 1, 1440, 5, 'min'));
+    if (draft.goal_type === 'time') goalBody.append(h('p', { class: 'hint' }, 'How many minutes, each day?'), stepper(() => draft.minutes, (v) => (draft.minutes = v), 1, 1440, 5, null));
     else goalBody.append(h('p', { class: 'hint' }, 'How many times, each day?'), stepper(() => draft.count, (v) => (draft.count = v), 1, 9999, 1, null),
       h('input', { class: 'pill-input', type: 'text', placeholder: 'Unit (optional): glasses, pages…', maxLength: 20, value: draft.unit, onInput: (e) => { draft.unit = e.target.value; } }));
   }
