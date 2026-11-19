@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.5.2';
+export const VERSION = '2.5.3';
 
 export const CHANGELOG = [
+  {
+    version: '2.5.3',
+    date: 'November 19, 2026',
+    items: ['The menu after pressing and holding now always opens on the left side, so your thumb never covers the options.'],
+  },
   {
     version: '2.5.2',
     date: 'November 19, 2026',
