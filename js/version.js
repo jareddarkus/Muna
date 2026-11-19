@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.0.1';
+export const VERSION = '2.0.2';
 
 export const CHANGELOG = [
+  {
+    version: '2.0.2',
+    date: 'November 19, 2026',
+    items: ['The Copy button no longer appears on your own posts, and copying a habit you already have is blocked, so a stray tap can\u2019t duplicate it.'],
+  },
   {
     version: '2.0.1',
     date: 'November 19, 2026',
