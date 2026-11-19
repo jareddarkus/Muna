@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.6.1';
+export const VERSION = '2.6.2';
 
 export const CHANGELOG = [
+  {
+    version: '2.6.2',
+    date: 'November 19, 2026',
+    items: ['Habit editor: the − and + buttons stay put when you switch between Count and Time. A new habit starts at 5 times (Count) or 30 minutes (Time).'],
+  },
   {
     version: '2.6.1',
     date: 'November 19, 2026',
