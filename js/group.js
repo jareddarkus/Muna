@@ -115,13 +115,14 @@ export function openGroup(gid) {
   }
   function habitAttachment(p) {
     const hb = p.habit, rr = rateRing(); rr.set(p.pct);
-    const copy = h('button', { type: 'button', class: 'pill small light', onClick: async (e) => {
-      e.currentTarget.disabled = true;
+    const copy = h('button', { type: 'button', class: 'pill small light', onClick: async () => {
+      copy.disabled = true;
       try { await copyHabit(hb); toast('Added to your habits'); } catch (er) { fail(er); }
-      e.currentTarget.disabled = false;
+      copy.disabled = false;
     } }, 'Copy');
+    // you never copy your own habit; only other people's
     return h('div', { class: 'shared-habit', style: { '--c': hex(hb.color) } }, iconCircle(hb.icon, hex(hb.color), 48, 28),
-      h('span', { class: 'sh-text' }, h('b', {}, hb.title), h('i', {}, habitSub(hb))), h('span', { class: 'sh-right' }, rr.el, copy));
+      h('span', { class: 'sh-text' }, h('b', {}, hb.title), h('i', {}, habitSub(hb))), h('span', { class: 'sh-right' }, rr.el, p.author_id === state.me.id ? null : copy));
   }
   function pickHabit(done) {
     const pick = openPanel({ cls: 'picker-habit' });

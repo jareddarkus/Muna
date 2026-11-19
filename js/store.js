@@ -350,7 +350,11 @@ export const listComments = async (pid) => { const rows = await backend.listComm
 export const addComment = (pid, body, parentId) => backend.addComment(pid, body, parentId);
 export const deleteComment = (id) => backend.deleteComment(id);
 export const toggleCommentLike = (id, liked) => backend.toggleCommentLike(id, state.me.id, liked);
-export const copyHabit = (snap) => saveHabit({ title: snap.title, icon: snap.icon, color: snap.color, goal_type: snap.goal_type, target: snap.target, unit: snap.unit || '', days: snap.days, group_id: null });
+export const copyHabit = (snap) => {
+  const same = habitList().some((x) => x.title.trim().toLowerCase() === snap.title.trim().toLowerCase() && x.goal_type === snap.goal_type && x.target === snap.target && [...x.days].sort().join() === [...snap.days].sort().join());
+  if (same) return Promise.reject(new Error('You already have this habit.'));
+  return saveHabit({ title: snap.title, icon: snap.icon, color: snap.color, goal_type: snap.goal_type, target: snap.target, unit: snap.unit || '', days: snap.days, group_id: null });
+};
 export const isFriend = (uid) => state.friendships.some((f) => f.status === 'accepted' && [f.requester_id, f.addressee_id].includes(uid));
 export const friendshipWith = (uid) => state.friendships.find((f) => [f.requester_id, f.addressee_id].includes(uid));
 export const pendingCount = () => state.invites.length + state.requests.length + state.friendships.filter((f) => f.status === 'pending' && f.addressee_id === state.me?.id).length;
