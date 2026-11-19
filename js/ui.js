@@ -11,7 +11,7 @@ export function ring({ size = 159, stroke = 12, color = PALETTE.green, glow = fa
   const el = h('div', { class: `ring ${cls}`, style: { width: `${size}px`, height: `${size}px` } });
   el.innerHTML = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" overflow="visible" aria-hidden="true">
     ${glow ? `<defs><filter id="${id}" x="-30%" y="-30%" width="160%" height="170%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="${color}" flood-opacity=".5" class="glow"/></filter></defs>` : ''}
-    <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${PALETTE.track}" stroke-width="${stroke}"/>
+    <circle cx="${c}" cy="${c}" r="${r}" fill="none" style="stroke: var(--track)" stroke-width="${stroke}"/>
     <circle class="ring-bar" cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
       stroke-dasharray="${C}" stroke-dashoffset="${C}" transform="rotate(-90 ${c} ${c})" ${glow ? `filter="url(#${id})"` : ''}/></svg>`;
   const bar = el.querySelector('.ring-bar'), shadow = el.querySelector('.glow');

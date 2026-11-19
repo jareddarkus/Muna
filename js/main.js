@@ -3,6 +3,7 @@ import { icon } from './icons.js';
 import { VERSION } from './version.js';
 import { syncPush } from './push.js';
 import { state, subscribe, boot, signInGoogle, googleEnabled, enterDemo, pendingCount } from './store.js';
+import './theme.js';
 import { mountHome } from './home.js';
 import { mountTasks } from './tasks.js';
 import { mountReports } from './reports.js';
