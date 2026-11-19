@@ -11,8 +11,8 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catc
 
 export const demo = {
   name: 'demo',
-  async load() { return { me: db.me, habits: db.habits, logs: db.logs, reminders: db.reminders, profiles: [db.me], groups: [], members: [], friendships: [] }; },
-  async loadSocial() { return { groups: [], members: [], friendships: [] }; },
+  async load() { return { me: db.me, habits: db.habits, logs: db.logs, reminders: db.reminders, profiles: [db.me], groups: [], members: [], friendships: [], invites: [], requests: [], rates: [] }; },
+  async loadSocial() { return { groups: [], members: [], friendships: [], invites: [], requests: [], rates: [] }; },
   async profilesFor() { return [db.me]; },
   async signOut() { localStorage.removeItem(KEY); },
 
@@ -33,9 +33,12 @@ export const demo = {
     return new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(blob); });
   },
 
-  createGroup: needAccount, renameGroup: needAccount, deleteGroup: needAccount, joinGroup: needAccount,
-  addMember: needAccount, removeMember: needAccount, findProfile: needAccount, requestFriend: needAccount,
-  acceptFriend: needAccount, removeFriendship: needAccount,
+  createGroup: needAccount, updateGroup: needAccount, deleteGroup: needAccount, groupById: needAccount, joinGroup: needAccount, leaveGroup: needAccount,
+  requestJoin: needAccount, respondRequest: needAccount, inviteUser: needAccount, respondInvite: needAccount, setRole: needAccount, kickMember: needAccount,
+  searchGroups: needAccount, recommendedGroups: needAccount, searchProfiles: needAccount, memberRate: needAccount, friendHabits: needAccount,
+  groupOverview: needAccount, listPosts: needAccount, createPost: needAccount, deletePost: needAccount, togglePostLike: needAccount,
+  listComments: needAccount, addComment: needAccount, deleteComment: needAccount, toggleCommentLike: needAccount,
+  findProfile: needAccount, requestFriend: needAccount, acceptFriend: needAccount, removeFriendship: needAccount,
   listen() { return () => {}; },
 };
 export const newDemoId = uuid;

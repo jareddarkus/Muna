@@ -12,9 +12,12 @@ export const state = {
   habits: new Map(),
   logs: new Map(), // "habit|user|day" -> value
   profiles: new Map(),
-  groups: new Map(),
+  groups: new Map(), // every group we know about (mine, invited to, searched)
   members: [],
   friendships: [],
+  invites: [],
+  requests: [], // join requests for groups I administer
+  groupRates: new Map(),
   today: todayStr(),
   viewDay: todayStr(), // the day shown on the Today screen
   reminders: new Map(), // habit id -> 'HH:MM' (mine)
@@ -23,6 +26,12 @@ export const state = {
 let backend = remote;
 const listeners = new Set();
 export const subscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
+const busHandlers = new Map();
+export const bus = {
+  on(name, fn) { (busHandlers.get(name) || busHandlers.set(name, new Set()).get(name)).add(fn); return () => busHandlers.get(name).delete(fn); },
+  emit(name) { busHandlers.get(name)?.forEach((f) => f()); },
+};
+const socialUserIds = (s) => [...s.members.map((m) => m.user_id), ...s.friendships.flatMap((f) => [f.requester_id, f.addressee_id]), ...(s.invites || []).map((i) => i.inviter_id), ...(s.requests || []).map((r) => r.user_id)];
 let raf;
 export function emit() { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { listeners.forEach((f) => f()); saveCache(); }); }
 
@@ -33,7 +42,9 @@ export const isScheduled = (h, day) => day >= h.created_on && h.days.includes(do
 export const progressOf = (h, v) => clamp(v / h.target, 0, 1);
 export const isDone = (h, v) => v >= h.target;
 export const habitList = () => [...state.habits.values()].sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
-export const myGroups = () => [...state.groups.values()];
+export const isMember = (gid) => state.members.some((m) => m.group_id === gid && m.user_id === state.me?.id);
+export const isAdmin = (gid) => state.members.some((m) => m.group_id === gid && m.user_id === state.me?.id && m.role === 'admin');
+export const myGroups = () => [...state.groups.values()].filter((g) => isMember(g.id));
 export const MAX_AHEAD = 7;
 export function setViewDay(d) {
   const lo = addDays(state.today, -HISTORY_DAYS), hi = addDays(state.today, MAX_AHEAD);
@@ -88,19 +99,27 @@ function saveCache() {
     try {
       localStorage.setItem(`muna.cache.${state.me.id}`, JSON.stringify({
         me: state.me, habits: [...state.habits.values()], logs: [...state.logs].map(([k, value]) => { const [habit_id, user_id, day] = k.split('|'); return { habit_id, user_id, day, value }; }),
-        reminders: [...state.reminders].map(([habit_id, remind_at]) => ({ habit_id, remind_at })), profiles: [...state.profiles.values()], groups: [...state.groups.values()], members: state.members, friendships: state.friendships,
+        reminders: [...state.reminders].map(([habit_id, remind_at]) => ({ habit_id, remind_at })), profiles: [...state.profiles.values()], groups: [...state.groups.values()], members: state.members, friendships: state.friendships, invites: state.invites, requests: state.requests, rates: [...state.groupRates.values()],
       }));
     } catch {}
   }, 1200);
+}
+function applySocial(s) {
+  const next = new Map(s.groups.map((g) => [g.id, g]));
+  for (const [id, g] of state.groups) if (!next.has(id)) next.set(id, g); // keep groups we are only looking at
+  state.groups = next;
+  state.members = s.members;
+  state.friendships = s.friendships;
+  state.invites = s.invites || [];
+  state.requests = s.requests || [];
+  state.groupRates = new Map((s.rates || []).map((r) => [r.gid, r]));
 }
 function hydrate(b) {
   state.me = b.me;
   state.habits = new Map(b.habits.map((x) => [x.id, x]));
   state.logs = new Map(b.logs.map((l) => [logKey(l.habit_id, l.user_id, l.day), l.value]));
   state.profiles = new Map(b.profiles.map((p) => [p.id, p]));
-  state.groups = new Map(b.groups.map((g) => [g.id, g]));
-  state.members = b.members;
-  state.friendships = b.friendships;
+  applySocial(b);
   state.reminders = new Map((b.reminders || []).map((r) => [r.habit_id, String(r.remind_at).slice(0, 5)]));
 }
 
@@ -173,21 +192,19 @@ export async function signOut() {
   await backend.signOut();
   if (state.me && !wasDemo) localStorage.removeItem(`muna.cache.${state.me.id}`);
   state.me = null; state.status = 'out'; state.demo = false; backend = remote;
-  state.habits.clear(); state.logs.clear(); state.groups.clear(); state.members = []; state.friendships = [];
+  state.habits.clear(); state.logs.clear(); state.groups.clear(); state.members = []; state.friendships = []; state.invites = []; state.requests = [];
   emit();
 }
 
 // ───────────── realtime ─────────────
 function realtimeHandlers() {
   const refreshSocial = debounceAsync(async () => {
-    const s = await backend.loadSocial(state.me.id);
-    state.groups = new Map(s.groups.map((g) => [g.id, g])); state.members = s.members; state.friendships = s.friendships;
-    await ensureProfiles([...s.members.map((m) => m.user_id), ...s.friendships.flatMap((f) => [f.requester_id, f.addressee_id])]);
-    const hb = await backend.load(state.me.id, addDays(state.today, -HISTORY_DAYS), addDays(state.today, -2)); // shared habits may have changed
-    state.habits = new Map(hb.habits.map((x) => [x.id, x]));
-    for (const l of hb.logs) if (!pending.has(logKey(l.habit_id, l.user_id, l.day))) state.logs.set(logKey(l.habit_id, l.user_id, l.day), l.value);
+    const soc = await backend.loadSocial(state.me.id);
+    applySocial(soc);
+    await ensureProfiles(socialUserIds(soc));
     emit();
   }, 400);
+  const postsChanged = debounceAsync(async () => bus.emit('posts'), 300);
   return {
     habits: (p) => {
       if (p.eventType === 'DELETE') state.habits.delete(p.old.id); else state.habits.set(p.new.id, p.new);
@@ -207,7 +224,8 @@ function realtimeHandlers() {
       emit();
     },
     profiles: (p) => { if (p.new?.id) { state.profiles.set(p.new.id, p.new); if (p.new.id === state.me.id) state.me = p.new; emit(); } },
-    groups: refreshSocial, group_members: refreshSocial, friendships: refreshSocial,
+    group_members: refreshSocial, friendships: refreshSocial, group_invites: refreshSocial, group_requests: refreshSocial,
+    posts: postsChanged, comments: postsChanged, post_likes: postsChanged, comment_likes: postsChanged,
     status: (s) => { if (s === 'SUBSCRIBED') { if (subscribedOnce) reloadSilently(); subscribedOnce = true; } },
   };
 }
@@ -294,14 +312,48 @@ export async function setAvatar(blob) {
 }
 
 // ── social ──
-async function socialRefresh() { const s = await backend.loadSocial(state.me.id); state.groups = new Map(s.groups.map((g) => [g.id, g])); state.members = s.members; state.friendships = s.friendships; await ensureProfiles([...s.members.map((m) => m.user_id), ...s.friendships.flatMap((f) => [f.requester_id, f.addressee_id])]); emit(); }
-export async function createGroup(name) { const g = await backend.createGroup(name.trim()); await socialRefresh(); return g; }
-export async function renameGroup(id, name) { await backend.renameGroup(id, name.trim()); await socialRefresh(); }
-export async function deleteGroup(id) { await backend.deleteGroup(id); await reload(); }
-export async function leaveGroup(id) { await backend.removeMember(id, state.me.id); await reload(); }
-export async function removeMember(gid, uid) { await backend.removeMember(gid, uid); await socialRefresh(); }
-export async function joinGroup(code) { const id = await backend.joinGroup(code); await reload(); return id; }
-export async function addMember(gid, uid) { await backend.addMember(gid, uid); await socialRefresh(); }
+async function socialRefresh() { const soc = await backend.loadSocial(state.me.id); applySocial(soc); await ensureProfiles(socialUserIds(soc)); emit(); }
+export const refreshSocialNow = socialRefresh;
+export async function createGroup(fields) { const g = await backend.createGroup({ ...fields, name: fields.name.trim(), description: (fields.description || '').trim() }); await socialRefresh(); return g; }
+export async function updateGroup(id, patch) { await backend.updateGroup(id, patch); await socialRefresh(); }
+export async function deleteGroup(id) { await backend.deleteGroup(id); await socialRefresh(); }
+export async function leaveGroup(id) { await backend.leaveGroup(id); await socialRefresh(); }
+export async function joinGroup(id) { await backend.joinGroup(id); await socialRefresh(); }
+export async function requestJoin(id) { await backend.requestJoin(id); await socialRefresh(); }
+export async function respondRequest(gid, uid, accept) { await backend.respondRequest(gid, uid, accept); await socialRefresh(); }
+export async function inviteUser(gid, uid) { await backend.inviteUser(gid, uid); await socialRefresh(); }
+export async function respondInvite(id, accept) { await backend.respondInvite(id, accept); await socialRefresh(); }
+export async function setRole(gid, uid, role) { await backend.setRole(gid, uid, role); await socialRefresh(); }
+export async function kickMember(gid, uid) { await backend.kickMember(gid, uid); await socialRefresh(); }
+export const searchGroups = (q) => backend.searchGroups(q);
+export async function recommendedGroups() {
+  const words = [...new Set(habitList().flatMap((h) => h.title.toLowerCase().split(/[^\p{L}\p{N}]+/u)).filter((w) => w.length >= 3))].slice(0, 12);
+  return words.length ? backend.recommendedGroups(words) : [];
+}
+export async function searchUsers(q) {
+  q = q.trim().toLowerCase().replace(/^@/, '');
+  if (!q) return [];
+  const rows = await backend.searchProfiles(q);
+  rows.forEach((p) => state.profiles.set(p.id, p));
+  return rows.filter((p) => p.id !== state.me.id);
+}
+export const memberRate = (uid) => backend.memberRate(uid);
+export const friendHabits = (uid) => backend.friendHabits(uid);
+export const groupOverview = async (gid) => { const rows = await backend.groupOverview(gid); await ensureProfiles(rows.map((r) => r.user_id)); return rows; };
+export const loadGroup = async (gid) => { const g = await backend.groupById(gid); if (g) { state.groups.set(g.id, g); emit(); } return g; };
+// posts
+export const listPosts = async (gid) => { const rows = await backend.listPosts(gid); await ensureProfiles(rows.map((p) => p.author_id)); return rows; };
+export const createPost = (gid, body, habit) => backend.createPost(gid, body, habit);
+export const deletePost = (id) => backend.deletePost(id);
+export const togglePostLike = (id, liked) => backend.togglePostLike(id, state.me.id, liked);
+export const listComments = async (pid) => { const rows = await backend.listComments(pid); await ensureProfiles(rows.comments.map((c) => c.author_id)); return rows; };
+export const addComment = (pid, body, parentId) => backend.addComment(pid, body, parentId);
+export const deleteComment = (id) => backend.deleteComment(id);
+export const toggleCommentLike = (id, liked) => backend.toggleCommentLike(id, state.me.id, liked);
+export const copyHabit = (snap) => saveHabit({ title: snap.title, icon: snap.icon, color: snap.color, goal_type: snap.goal_type, target: snap.target, unit: snap.unit || '', days: snap.days, group_id: null });
+export const isFriend = (uid) => state.friendships.some((f) => f.status === 'accepted' && [f.requester_id, f.addressee_id].includes(uid));
+export const friendshipWith = (uid) => state.friendships.find((f) => [f.requester_id, f.addressee_id].includes(uid));
+export const pendingCount = () => state.invites.length + state.requests.length + state.friendships.filter((f) => f.status === 'pending' && f.addressee_id === state.me?.id).length;
 
 export const friendsOf = () => state.friendships.filter((f) => f.status === 'accepted').map((f) => ({ ...f, other: profileOf(f.requester_id === state.me.id ? f.addressee_id : f.requester_id) }));
 export const incomingRequests = () => state.friendships.filter((f) => f.status === 'pending' && f.addressee_id === state.me.id).map((f) => ({ ...f, other: profileOf(f.requester_id) }));
@@ -322,6 +374,15 @@ export async function addFriendByUsername(username) {
   await backend.requestFriend(state.me.id, p.id);
   await socialRefresh();
   return `Request sent to @${p.username}.`;
+}
+export async function addFriendById(uid) {
+  const existing = friendshipWith(uid);
+  if (existing) {
+    if (existing.status === 'pending' && existing.addressee_id === state.me.id) { await backend.acceptFriend(existing.id); await socialRefresh(); return; }
+    return;
+  }
+  await backend.requestFriend(state.me.id, uid);
+  await socialRefresh();
 }
 export async function acceptFriend(id) { await backend.acceptFriend(id); await socialRefresh(); }
 export async function removeFriendship(id) { await backend.removeFriendship(id); await socialRefresh(); }

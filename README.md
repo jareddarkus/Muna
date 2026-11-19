@@ -2,9 +2,10 @@
 
 A minimalist habit tracker. White, black and a small palette of accent gradients; everything rounded, everything smooth.
 
-- **Today** – a progress ring for the day and your habits underneath. Tap a habit to focus: count up, or run a timer.
-- **Progress** – rounded bar charts (week / month / year), streaks and a heatmap, for all habits or one at a time.
-- **Settings** – profile photo (compressed to WebP), username, friends and groups.
+- **Today** – the ring for today, pending habits, then completed ones in their own color. Tap a habit to record progress: count up, or run a timer.
+- **Reports** – your last 21 days, for all habits or one at a time, colored red to green.
+- **Social** – friends and groups (public or private, admins, invitations, posts, comments, likes), with predictive search.
+- **Account** – profile photo (cropped, WebP), username, About me, notifications, updates.
 - **Sync** – accounts, data and realtime sync run on Supabase, so your phone, Mac and iPad always agree, and shared habits update live for everyone in a group.
 - **Day browsing** – arrows on the Today screen step through days; log what you forgot, or preview upcoming habits. Each habit can have a start date.
 - **Reminders** – turn on notifications in Settings, then set a time on any habit (Web Push, delivered even when the app is closed).

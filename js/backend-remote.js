@@ -37,24 +37,30 @@ export const remote = {
 
   /** Everything the signed-in user can see. `since` limits log history. */
   async load(userId, since, recentSince) {
-    const [me, habits, myLogs, otherLogs, social, reminders] = await Promise.all([
+    const [me, habits, myLogs, social, reminders] = await Promise.all([
       sb.from('profiles').select('*').eq('id', userId).single().then(check),
-      sb.from('habits').select('*').order('created_at').then(check),
+      sb.from('habits').select('*').eq('owner_id', userId).order('created_at').then(check),
       all(() => sb.from('habit_logs').select('habit_id,user_id,day,value').eq('user_id', userId).gte('day', since).order('day')),
-      all(() => sb.from('habit_logs').select('habit_id,user_id,day,value').neq('user_id', userId).gte('day', recentSince).order('day')),
       this.loadSocial(userId),
       sb.from('habit_reminders').select('habit_id,remind_at').eq('user_id', userId).then(check),
     ]);
-    const profiles = await this.profilesFor([...social.members.map((m) => m.user_id), ...habits.map((x) => x.owner_id), ...social.friendships.flatMap((f) => [f.requester_id, f.addressee_id]), ...otherLogs.map((l) => l.user_id)]);
-    return { me, habits, logs: [...myLogs, ...otherLogs], profiles, reminders, ...social };
+    const profiles = await this.profilesFor([...social.members.map((m) => m.user_id), ...social.friendships.flatMap((f) => [f.requester_id, f.addressee_id]), ...social.invites.map((i) => i.inviter_id), ...social.requests.map((q) => q.user_id)]);
+    return { me, habits, logs: myLogs, profiles, reminders, ...social };
   },
-  async loadSocial() {
-    const [groups, members, friendships] = await Promise.all([
-      sb.from('groups').select('*').order('created_at').then(check),
+  async loadSocial(userId) {
+    const [members, friendships, invites, requests] = await Promise.all([
       sb.from('group_members').select('*').then(check),
       sb.from('friendships').select('*').order('created_at').then(check),
+      sb.from('group_invites').select('*').eq('invitee_id', userId).then(check),
+      sb.from('group_requests').select('*').then(check),
     ]);
-    return { groups, members, friendships };
+    const mine = members.filter((m) => m.user_id === userId).map((m) => m.group_id);
+    const ids = [...new Set([...mine, ...invites.map((i) => i.group_id), ...requests.map((q) => q.group_id)])];
+    const [groups, rates] = await Promise.all([
+      ids.length ? sb.from('groups').select('*').in('id', ids).then(check) : [],
+      mine.length ? sb.rpc('group_rates', { gids: mine }).then(check) : [],
+    ]);
+    return { groups, members, friendships, invites, requests, rates };
   },
   async profilesFor(ids) {
     ids = [...new Set(ids)];
@@ -98,12 +104,57 @@ export const remote = {
     return publicUrl;
   },
 
-  async createGroup(name) { return check(await sb.from('groups').insert({ name }).select().single()); },
-  async renameGroup(id, name) { check(await sb.from('groups').update({ name }).eq('id', id)); },
+  async createGroup(f) { return check(await sb.from('groups').insert({ name: f.name, description: f.description || '', icon: f.icon, color: f.color, is_public: f.is_public }).select().single()); },
+  async updateGroup(id, patch) { check(await sb.from('groups').update(patch).eq('id', id)); },
   async deleteGroup(id) { check(await sb.from('groups').delete().eq('id', id)); },
-  async joinGroup(code) { return check(await sb.rpc('join_group', { code })); },
-  async addMember(gid, uid) { check(await sb.rpc('add_group_member', { gid, uid })); },
-  async removeMember(gid, uid) { check(await sb.from('group_members').delete().eq('group_id', gid).eq('user_id', uid)); },
+  async groupById(id) { return check(await sb.from('groups').select('*').eq('id', id).maybeSingle()); },
+  async joinGroup(gid) { check(await sb.rpc('join_group', { gid })); },
+  async leaveGroup(gid) { check(await sb.rpc('leave_group', { gid })); },
+  async requestJoin(gid) { check(await sb.rpc('request_join', { gid })); },
+  async respondRequest(gid, uid, accept) { check(await sb.rpc('respond_request', { gid, uid, accept })); },
+  async inviteUser(gid, uid) { check(await sb.rpc('invite_user', { gid, uid })); },
+  async respondInvite(iid, accept) { check(await sb.rpc('respond_invite', { iid, accept })); },
+  async setRole(gid, uid, newRole) { check(await sb.rpc('set_role', { gid, uid, new_role: newRole })); },
+  async kickMember(gid, uid) { check(await sb.rpc('kick_member', { gid, uid })); },
+  async searchGroups(q) { return check(await sb.rpc('search_groups', { q })); },
+  async recommendedGroups(words) { return check(await sb.rpc('recommended_groups', { words })); },
+  async searchProfiles(q) {
+    const esc = q.replace(/[\\%_]/g, (c) => `\\${c}`);
+    return check(await sb.from('profiles').select('id,username,display_name,avatar_url,about').ilike('username', `${esc}%`).order('username').limit(8));
+  },
+  async memberRate(uid) { return check(await sb.rpc('member_rate', { uid })); },
+  async friendHabits(uid) { return check(await sb.rpc('friend_habits', { uid })); },
+  async groupOverview(gid) { return check(await sb.rpc('group_overview', { gid })); },
+
+  // ── posts, comments, likes ──
+  async listPosts(gid) {
+    const rows = check(await sb.from('posts').select('*, post_likes(user_id), comments(count)').eq('group_id', gid).order('created_at', { ascending: false }).limit(40));
+    const withHabit = rows.filter((p) => p.habit_id).map((p) => p.id);
+    const rates = withHabit.length ? check(await sb.rpc('post_rates', { pids: withHabit })) : [];
+    const byId = new Map(rates.map((r) => [r.post_id, r.pct]));
+    return rows.map((p) => ({ ...p, likes: p.post_likes.map((l) => l.user_id), comment_count: p.comments?.[0]?.count || 0, pct: byId.get(p.id) ?? null }));
+  },
+  async createPost(gid, body, habit) {
+    const row = { group_id: gid, body, habit_id: habit?.id || null, habit: habit ? { title: habit.title, icon: habit.icon, color: habit.color, goal_type: habit.goal_type, target: habit.target, unit: habit.unit, days: habit.days } : null };
+    return check(await sb.from('posts').insert(row).select().single());
+  },
+  async deletePost(id) { check(await sb.from('posts').delete().eq('id', id)); },
+  async togglePostLike(id, uid, liked) {
+    if (liked) check(await sb.from('post_likes').insert({ post_id: id, user_id: uid }));
+    else check(await sb.from('post_likes').delete().eq('post_id', id).eq('user_id', uid));
+  },
+  async listComments(pid) {
+    const comments = check(await sb.from('comments').select('*').eq('post_id', pid).order('created_at'));
+    const ids = comments.map((c) => c.id);
+    const likes = ids.length ? check(await sb.from('comment_likes').select('comment_id,user_id').in('comment_id', ids)) : [];
+    return { comments, likes };
+  },
+  async addComment(pid, body, parentId) { return check(await sb.from('comments').insert({ post_id: pid, body, parent_id: parentId || null }).select().single()); },
+  async deleteComment(id) { check(await sb.from('comments').delete().eq('id', id)); },
+  async toggleCommentLike(id, uid, liked) {
+    if (liked) check(await sb.from('comment_likes').insert({ comment_id: id, user_id: uid }));
+    else check(await sb.from('comment_likes').delete().eq('comment_id', id).eq('user_id', uid));
+  },
 
   async findProfile(username) { return check(await sb.from('profiles').select('*').eq('username', username).maybeSingle()); },
   async requestFriend(me, uid) { return check(await sb.from('friendships').insert({ requester_id: me, addressee_id: uid }).select().single()); },
@@ -113,7 +164,7 @@ export const remote = {
   /** Live changes. Handlers get the raw postgres_changes payload. */
   listen(handlers) {
     const ch = sb.channel('muna-sync');
-    for (const t of ['habits', 'habit_logs', 'habit_reminders', 'groups', 'group_members', 'friendships', 'profiles']) {
+    for (const t of ['habits', 'habit_logs', 'habit_reminders', 'group_members', 'group_invites', 'group_requests', 'friendships', 'posts', 'comments', 'post_likes', 'comment_likes']) {
       ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, (p) => handlers[t]?.(p));
     }
     ch.subscribe((status) => handlers.status?.(status));
