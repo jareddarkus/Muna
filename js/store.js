@@ -227,6 +227,7 @@ async function refresh(userId = state.me.id) {
 export const reload = async () => { await refresh(); emit(); };
 
 export async function signInGoogle() { await remote.signInGoogle(); }
+export async function signInGoogleToken(token, nonce) { await remote.signInIdToken(token, nonce); }
 export const googleEnabled = () => remote.googleEnabled();
 export async function signOut() {
   const wasDemo = state.demo;

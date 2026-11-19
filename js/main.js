@@ -2,7 +2,8 @@ import { h, toast, tap } from './util.js';
 import { icon } from './icons.js';
 import { VERSION } from './version.js';
 import { syncPush } from './push.js';
-import { state, subscribe, boot, signInGoogle, googleEnabled, enterDemo, pendingCount } from './store.js';
+import { renderGoogleButton } from './google-signin.js';
+import { state, subscribe, boot, signInGoogle, signInGoogleToken, googleEnabled, enterDemo, pendingCount } from './store.js';
 import './theme.js';
 import { mountHome } from './home.js';
 import { mountTasks } from './tasks.js';
@@ -35,15 +36,22 @@ let mode = null, announced = false;
 function loginView() {
   const note = h('p', { class: 'login-note', hidden: true });
   const btn = h('button', { type: 'button', class: 'pill google', html: `${GOOGLE_G}<span>Continue with Google</span>` });
+  const gsi = h('div', { class: 'gsi' }), classic = h('button', { type: 'button', class: 'link', hidden: true }, 'Trouble signing in? Use the other way');
   btn.addEventListener('click', async () => {
     btn.disabled = true; btn.classList.add('busy'); note.hidden = true;
     try { await signInGoogle(); } catch (e) { note.textContent = e?.message || 'Could not start Google sign-in.'; note.hidden = false; btn.disabled = false; btn.classList.remove('busy'); }
   });
+  // Google's own button first (shows "Muna"); the classic redirect button is the fallback when it can't load
+  btn.hidden = true;
+  const useClassic = () => { gsi.hidden = true; btn.hidden = false; classic.hidden = true; };
+  classic.addEventListener('click', useClassic);
+  renderGoogleButton(gsi, signInGoogleToken, (e) => { note.textContent = e?.message || 'Could not sign in with Google.'; note.hidden = false; })
+    .then(() => { classic.hidden = false; }).catch(useClassic);
   if (authError) { note.textContent = authError; note.hidden = false; }
   googleEnabled().then((ok) => { if (!ok) { note.textContent = 'Google sign-in is not switched on for this project yet. You can still preview the app.'; note.hidden = false; } });
   return h('div', { class: 'login' },
     h('div', { class: 'login-top' }, h('div', { class: 'logo', html: logoSvg(104) }), h('h1', {}, 'Muna'), h('p', {}, 'Small habits, every day.')),
-    h('div', { class: 'login-actions' }, btn, note, h('button', { type: 'button', class: 'link', onClick: () => enterDemo() }, 'Preview without an account')));
+    h('div', { class: 'login-actions' }, gsi, btn, classic, note, h('button', { type: 'button', class: 'link', onClick: () => enterDemo() }, 'Preview without an account')));
 }
 
 let tabHandler = null;

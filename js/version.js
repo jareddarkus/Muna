@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.10';
+export const VERSION = '2.11';
 
 export const CHANGELOG = [
+  {
+    version: '2.11',
+    date: 'November 19, 2026',
+    items: ['Sign in with Google now uses Google\'s own button, so the account screen says Muna instead of the long Supabase address. If it does not work on your phone, there is a link underneath to use the old way.'],
+  },
   {
     version: '2.10',
     date: 'November 19, 2026',
