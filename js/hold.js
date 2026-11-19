@@ -103,19 +103,17 @@ function lift(el, getItems, onDone) {
   };
   const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); api.close(); } };
 
-  // menu goes below the element (or above when there is no room), tucked to the side it is closest to
+  // menu goes below the element (or above when there is no room), always on the left
   function place() {
     const vw = window.innerWidth, vh = window.innerHeight, mw = menu.offsetWidth, mh = menu.offsetHeight, gap = 12;
     const grow = rect.height * (LIFT_SCALE - 1) / 2; // the lifted element is a few % bigger
     let tp = rect.bottom + grow + gap, origin = 'top';
     if (tp + mh > vh - 20) { tp = rect.top - grow - gap - mh; origin = 'bottom'; }
     tp = Math.max(20, Math.min(tp, vh - mh - 20));
-    const center = rect.left + rect.width / 2;
-    const right = center > vw / 2;
-    let lf = right ? rect.right - mw - 10 : rect.left + 10;
-    lf = Math.max(15, Math.min(lf, vw - mw - 15));
+    // always on the left, so a right thumb never covers the options
+    const lf = Math.max(15, Math.min(rect.left + 10, vw - mw - 15));
     menu.style.left = `${lf}px`; menu.style.top = `${tp}px`;
-    menu.style.transformOrigin = `${right ? 'right' : 'left'} ${origin}`;
+    menu.style.transformOrigin = `left ${origin}`;
   }
   return api;
 }
