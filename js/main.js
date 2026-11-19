@@ -14,6 +14,9 @@ const GOOGLE_G = '<svg viewBox="0 0 48 48" width="22" height="22" aria-hidden="t
 
 // Block pinch zoom (Safari ignores user-scalable=no). Double-tap zoom is disabled in CSS; taps are never swallowed.
 ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => e.preventDefault(), { passive: false }));
+// two-finger pinch and text selection are off (except while typing in a field)
+document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 || (e.scale && e.scale !== 1)) e.preventDefault(); }, { passive: false });
+document.addEventListener('selectstart', (e) => { if (!e.target.closest?.('input, textarea, [contenteditable="true"]')) e.preventDefault(); });
 document.addEventListener('touchmove', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
 
 // Google/Supabase report sign-in problems in the address bar. Read it before the store tidies the URL up.
