@@ -64,7 +64,8 @@ export function mountTasks(root) {
       if (!c) { c = make(tk); cards.set(tk.id, c); c.el.classList.add('enter'); c.el.addEventListener('animationend', () => c.el.classList.remove('enter'), { once: true }); }
       c.t = tk;
       const done = isTaskDone(tk), sc = stepCount(tk.id), path = taskPath(tk);
-      const sub = [path ? `in ${path}` : '', sc.n ? `${sc.done}/${sc.n} steps` : ''].filter(Boolean).join(' • ') || (tk.parent_id ? 'Step' : 'Task');
+      const late = !done && tk.day < day ? `Due ${shortDay(tk.day)}` : '';
+      const sub = [late, path ? `in ${path}` : '', sc.n ? `${sc.done}/${sc.n} steps` : ''].filter(Boolean).join(' • ') || (tk.parent_id ? 'Step' : 'Task');
       c.set({ color: TASK_COLOR, icon: tk.icon, name: tk.title, sub, done });
       c.tr.set(done, sc.n, sc.done);
       (done ? finished : pending).push(c);

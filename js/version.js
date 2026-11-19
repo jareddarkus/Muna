@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.3';
+export const VERSION = '2.3.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.3.1',
+    date: 'November 19, 2026',
+    items: ['Unfinished tasks now carry over: they stay on Today, marked "Due" with their original day, until you finish them.'],
+  },
   {
     version: '2.3',
     date: 'November 19, 2026',

@@ -65,8 +65,12 @@ export const shiftTaskDay = (n) => setTaskDay(addDays(state.taskDay, n));
 export const taskList = () => [...state.tasks.values()].sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id < b.id ? -1 : 1));
 export const childrenOf = (id) => taskList().filter((t) => t.parent_id === id);
 export const isTaskDone = (t) => !!t.done_at;
-/** Tasks, steps and sub-steps whose day is `day`. */
-export const tasksOn = (day) => taskList().filter((t) => t.day === day);
+/** Tasks, steps and sub-steps due on `day` (today also lists unfinished ones from earlier days). */
+export const tasksOn = (day) => {
+  const all = taskList();
+  const late = day === state.today ? all.filter((t) => t.day && t.day < day && !t.done_at) : []; // unfinished tasks carry over to today
+  return [...late.sort((x, y) => (x.day < y.day ? -1 : x.day > y.day ? 1 : 0)), ...all.filter((t) => t.day === day)];
+};
 /** Every id below a task (so a task can never be moved into itself). */
 export function descendantIds(id) {
   const out = new Set(), walk = (x) => { for (const c of state.tasks.values()) if (c.parent_id === x && !out.has(c.id)) { out.add(c.id); walk(c.id); } };
