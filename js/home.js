@@ -11,9 +11,14 @@ import { openHabit } from './habit.js';
 import { openEditor } from './editor.js';
 import { attachHold } from './hold.js';
 import { habitItems } from './habit-actions.js';
+import { createCalendar } from './calendar.js';
 
 export function mountHome(root) {
-  const title = h('button', { type: 'button', class: 'day-title', 'aria-label': 'Jump to today', onClick: () => setViewDay(state.today) });
+  const cal = createCalendar({ getDay: () => state.viewDay, onPick: (d) => { setViewDay(d); cal.close(); } });
+  const title = h('button', { type: 'button', class: 'day-title', 'aria-label': 'Open calendar', 'aria-expanded': 'false', onClick: () => {
+    cal.toggle(); title.setAttribute('aria-expanded', String(cal.isOpen));
+    if (cal.isOpen) root.scrollTo?.({ top: 0, behavior: 'smooth' });
+  } });
   const prev = h('button', { type: 'button', class: 'arrow left', 'aria-label': 'Previous day', onClick: () => shiftViewDay(-1) }, icon('chevron-left', { size: 30.4, stroke: 1.58 }));
   const next = h('button', { type: 'button', class: 'arrow right', 'aria-label': 'Next day', onClick: () => shiftViewDay(1) }, icon('chevron-left', { size: 30.4, stroke: 1.58 }));
   const view = h('button', { type: 'button', class: 'sq-btn gray', 'aria-label': 'Change view' }, icon('layout-dashboard', { filled: true, size: 26.7 }));
@@ -27,7 +32,7 @@ export function mountHome(root) {
   const list = h('div', { class: 'cards' });
   const divider = h('div', { class: 'divider' });
   const empty = h('p', { class: 'empty-text' }, 'No habits');
-  root.append(header, hero, list, empty);
+  root.append(cal.el, header, hero, list, empty);
 
   const cards = new Map(); // habit id -> component
   function make(hb) {
@@ -47,6 +52,8 @@ export function mountHome(root) {
     // title + arrows
     title.textContent = isToday ? 'Today' : shortDay(day);
     title.classList.toggle('away', !isToday);
+    title.setAttribute('aria-expanded', String(cal.isOpen));
+    cal.refresh();
     prev.disabled = day <= addDays(state.today, -HISTORY_DAYS);
     next.disabled = day >= addDays(state.today, MAX_AHEAD);
 
