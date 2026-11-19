@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.6.3';
+export const VERSION = '2.6.4';
 
 export const CHANGELOG = [
+  {
+    version: '2.6.4',
+    date: 'November 19, 2026',
+    items: ['Date and time fields (start date, reminder time) now show their value centered in the pill instead of at the top-left.'],
+  },
   {
     version: '2.6.3',
     date: 'November 19, 2026',
