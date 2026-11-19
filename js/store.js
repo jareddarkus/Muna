@@ -1,7 +1,7 @@
 // App state, selectors and actions. UI never talks to Supabase directly.
 import { remote } from './backend-remote.js';
 import { demo } from './backend-demo.js';
-import { todayStr, addDays, dow, diffDays, uuid, clamp } from './util.js';
+import { todayStr, addDays, dow, diffDays, uuid, clamp, haptic } from './util.js';
 
 export const HISTORY_DAYS = 400;
 export const state = {
@@ -307,6 +307,7 @@ const offlineGuard = (p) => p.catch((e) => { console.error(e); state.online = fa
 export function setValue(habit, value, day = state.today) {
   value = clamp(Math.round(value), 0, 86400 * 2);
   const k = logKey(habit.id, state.me.id, day);
+  if ((state.logs.get(k) ?? 0) < habit.target && value >= habit.target) haptic('success'); // goal reached
   state.logs.set(k, value);
   emit();
   clearTimeout(pending.get(k));
@@ -376,6 +377,7 @@ async function reconcile(pid) {
 }
 /** Marking a task with steps done (or not done) does the same to all its steps; its parents follow. */
 export async function setTaskDone(t, done) {
+  if (done) haptic('success');
   const now = new Date().toISOString(), changes = new Map(), idx = kidsIndex();
   const mark = (id) => { changes.set(id, done ? now : null); (idx.get(id) || []).forEach((k) => mark(k.id)); };
   mark(t.id);

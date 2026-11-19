@@ -1,5 +1,5 @@
 // Drop-down month calendar for the Today screen: slides out above the header, tap a day to jump there.
-import { h, parseDay, addDays, ymd } from './util.js';
+import { h, parseDay, addDays, ymd, tap } from './util.js';
 import { icon } from './icons.js';
 import { state, HISTORY_DAYS, MAX_AHEAD } from './store.js';
 
@@ -34,7 +34,7 @@ export function createCalendar({ getDay, onPick }) {
     for (let d = 1; d <= days; d++) {
       const day = ymd(new Date(month.getFullYear(), month.getMonth(), d));
       const cls = ['cal-day', day === sel ? 'sel' : '', day === state.today ? 'today' : ''].join(' ').trim();
-      const b = h('button', { type: 'button', class: cls, 'aria-label': parseDay(day).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }), 'aria-current': day === sel ? 'date' : 'false', onClick: () => onPick(day) }, String(d));
+      const b = h('button', { type: 'button', class: cls, 'aria-label': parseDay(day).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }), 'aria-current': day === sel ? 'date' : 'false', onClick: () => { tap(); onPick(day); } }, String(d));
       b.disabled = day < lo() || day > hi();
       cells.push(b);
     }
