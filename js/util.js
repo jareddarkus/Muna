@@ -56,7 +56,32 @@ export const pct = (p) => `${Math.round(p * 100)}%`;
 export const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 export const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
 export const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => { const r = (Math.random() * 16) | 0; return (c === 'x' ? r : (r & 3) | 8).toString(16); }));
-export const tap = () => { try { navigator.vibrate?.(8); } catch {} };
+// ───────────── haptics ─────────────
+// Android (and anything with the Vibration API) buzzes. iPhone has no vibrate(), but Safari 17.4+ plays a haptic tick when
+// a hidden iOS "switch" checkbox is toggled by a tap, so we toggle one of those.
+let hapticLabel;
+function iosTick() {
+  if (!hapticLabel) {
+    const id = 'muna-haptic';
+    const input = document.createElement('input');
+    input.type = 'checkbox'; input.id = id; input.setAttribute('switch', ''); input.tabIndex = -1; input.setAttribute('aria-hidden', 'true');
+    hapticLabel = document.createElement('label');
+    hapticLabel.htmlFor = id; hapticLabel.setAttribute('aria-hidden', 'true');
+    for (const el of [input, hapticLabel]) el.style.cssText = 'position:fixed;left:-100px;top:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+    document.body.append(input, hapticLabel);
+  }
+  hapticLabel.click();
+}
+const BUZZ = { light: 8, select: 6, medium: 16, success: [12, 50, 18], warning: [20, 40, 20] };
+/** haptic('light' | 'select' | 'medium' | 'success' | 'warning') */
+export function haptic(kind = 'light') {
+  try {
+    if (typeof navigator.vibrate === 'function') { navigator.vibrate(BUZZ[kind] ?? 8); return; }
+    iosTick();
+    if (kind === 'success' || kind === 'warning') setTimeout(() => { try { iosTick(); } catch {} }, 80);
+  } catch {}
+}
+export const tap = () => haptic('light');
 
 /** Animate a number inside an element with ease-out. */
 export function tween(el, to, fmt = (v) => String(Math.round(v)), ms = 550) {

@@ -1,4 +1,4 @@
-import { h, toast } from './util.js';
+import { h, toast, tap } from './util.js';
 import { icon } from './icons.js';
 import { VERSION } from './version.js';
 import { syncPush } from './push.js';
@@ -66,6 +66,7 @@ function shellView() {
   const dock = h('nav', { class: 'dock' }, ...buttons, dot);
   let cur = -1;
   function go(i) {
+    if (cur >= 0 && i !== cur) tap();
     if (i === cur) { views[i].scrollTo({ top: 0, behavior: 'smooth' }); return; }
     if (cur === 2) reports.hide();
     cur = i;

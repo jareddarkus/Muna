@@ -1,7 +1,16 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.4';
+export const VERSION = '2.5';
 
 export const CHANGELOG = [
+  {
+    version: '2.5',
+    date: 'November 19, 2026',
+    items: [
+      'Press and hold now feels like iOS: the item dips under your finger, lifts with a springy motion, and settles back exactly where it was when you let go (no more small jump).',
+      'Haptics: small taps and buzzes when you press, hold, open a menu, finish a habit or task, and switch tabs. On iPhone this needs iOS 17.4 or newer.',
+      'Today and Tasks: the arrows, view button and plus button sit a little higher.',
+    ],
+  },
   {
     version: '2.4',
     date: 'November 19, 2026',
