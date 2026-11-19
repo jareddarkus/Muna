@@ -301,7 +301,7 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .panel.habit-panel { height: auto; max-height: 60dvh; max-height: 60vh; }
 @supports (height: 1dvh) { .panel.habit-panel { max-height: 60dvh; } }
 .habit-panel .panel-bar { height: 70px; padding-top: 20px; }
-.habit-panel .panel-body { padding-top: 0; gap: 14px; }
+.habit-panel .panel-body { padding-top: 10px; gap: 14px; }
 .habit-head { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; }
 .habit-head-text { min-width: 0; display: grid; }
 .habit-head .habit-title { font-size: 20px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -313,5 +313,8 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .picker-habit.short.panel, .panel.short { height: auto; max-height: 60dvh; }
 .habit-head { margin-top: 12px; }
 
-.habit-panel .panel-bar { height: 92px; padding: 32px 32px 0; }
+.habit-panel .panel-bar { height: 84px; padding: 24px 20px 0; grid-template-columns: 44px 1fr 44px; }
+.habit-panel .panel-bar h2 { font-size: 20px; min-width: 0; } .habit-bar-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px; }
+.habit-panel .big-btn.txt { font-size: 18px; font-weight: 700; } .habit-panel .big-btn.side.txt { color: var(--black); background: var(--track); }
 .habit-panel .panel-bar .sq-btn { width: 44px; height: 44px; }
+.habit-sub.center { justify-content: center; }

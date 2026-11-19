@@ -1,7 +1,16 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.1.1';
+export const VERSION = '2.1.2';
 
 export const CHANGELOG = [
+  {
+    version: '2.1.2',
+    date: 'November 19, 2026',
+    items: [
+      'Habit screen: the habit name now sits in the middle of the top bar, between Edit and the close button. The icon, goal line and 21-day percentage are gone.',
+      'Edit is now the Tabler pencil-on-paper icon, and the top buttons line up with the rest of the content.',
+      'Timer buttons are circles showing −5 / +5. The step follows the goal: 1 minute for short goals, up to 15 for long ones.',
+    ],
+  },
   {
     version: '2.1.1',
     date: 'November 19, 2026',
