@@ -1,7 +1,18 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.2';
+export const VERSION = '2.3';
 
 export const CHANGELOG = [
+  {
+    version: '2.3',
+    date: 'November 19, 2026',
+    items: [
+      'New Tasks tab (list icon in the bar). It looks like Today, but for one-off things: tick it once and it stays done on that day.',
+      'Tasks can have steps, steps can have sub-steps, as deep as you like. Each one has a name, icon, description and day, and you can duplicate it or move it under another task in its edit window.',
+      'Tasks count in your Reports percentage like a habit, shown as a gray circle. You can share a task to a group too.',
+      'Reports: all your habits are now icons right under the percentage. Tap one to filter, tap again to clear.',
+      'Habit editor: no more Today / Tomorrow buttons (it starts today, tap the date to change it) and the date is centered.',
+    ],
+  },
   {
     version: '2.2',
     date: 'November 19, 2026',

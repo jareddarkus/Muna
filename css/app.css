@@ -93,12 +93,12 @@ svg { display: block; flex: none; }
 
 /* ───────── bottom bar (126px, blue glow, tabs 72px apart) ───────── */
 .dock { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); z-index: 20; width: min(100%, 402px); height: 126px; padding-top: 30px;
-  display: grid; grid-template-columns: repeat(4, 72px); justify-content: center; background: #fff; border-radius: 63px 63px 0 0; box-shadow: 0 0 33px rgba(127, 178, 255, .5); --i: 0; }
+  display: grid; grid-template-columns: repeat(5, 72px); justify-content: center; background: #fff; border-radius: 63px 63px 0 0; box-shadow: 0 0 33px rgba(127, 178, 255, .5); --i: 0; }
 .tab { position: relative; height: 30px; display: grid; place-items: center; color: var(--dgray); transition: color .3s ease-out, transform .25s var(--ease); }
 .tab:active { transform: scale(.88); }
 .tab.active { color: var(--blue); }
 .tab-ic { display: grid; width: 36px; height: 36px; place-items: center; }
-.tab-dot { position: absolute; top: 68px; left: calc(50% - 108px - 4px + var(--i) * 72px); width: 8px; height: 8px; border-radius: 50%; background: var(--blue); transition: left .45s var(--ease); }
+.tab-dot { position: absolute; top: 68px; left: calc(50% - 144px - 4px + var(--i) * 72px); width: 8px; height: 8px; border-radius: 50%; background: var(--blue); transition: left .45s var(--ease); }
 .tab-badge { position: absolute; top: -4px; right: 16px; width: 12px; height: 12px; border-radius: 50%; background: var(--red); border: 2px solid #fff; }
 
 /* ───────── panels ───────── */
@@ -348,3 +348,39 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .cal-day.today { color: var(--blue); font-weight: 700; }
 .cal-day.sel { background: var(--blue); color: #fff; font-weight: 700; }
 .day-title { cursor: pointer; }
+
+/* ───────── reports: habit icons ───────── */
+.rep-icons { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px 14px; margin: 0 8px 26px; }
+.rep-ic { position: relative; width: 60px; height: 60px; border-radius: 50%; transition: transform .3s var(--ease), opacity .35s ease-out, box-shadow .3s ease-out; }
+.rep-ic:active { transform: scale(.92); }
+.rep-ic.on { box-shadow: 0 0 0 3px var(--lgray), 0 0 0 5px var(--black); transform: scale(1.04); }
+.rep-ic.dim { opacity: .4; }
+.rep-ic .icon-circle { pointer-events: none; }
+
+/* ───────── date field: centered text ───────── */
+.pill-input.date-input { text-align: center; padding: 0 16px; display: flex; align-items: center; justify-content: center; }
+.date-input::-webkit-date-and-time-value { text-align: center; margin: 0 auto; min-height: 0; }
+.date-input::-webkit-datetime-edit { padding: 0; text-align: center; }
+.date-input::-webkit-datetime-edit-fields-wrapper { padding: 0; }
+
+/* ───────── tasks ───────── */
+.task-panel { --c: var(--dgray); }
+.panel.habit-panel.task-panel { max-height: 75dvh; }
+.task-panel .panel-body { gap: 12px; }
+.task-about { width: 100%; text-align: left; font-size: 15px; line-height: 1.45; color: var(--black); white-space: pre-wrap; overflow-wrap: anywhere; }
+.step-list { width: 100%; display: grid; gap: 8px; }
+.step-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 52px; padding: 8px 16px 8px 10px; border-radius: 26px; background: #fff; text-align: left; cursor: pointer; transition: transform .2s var(--ease), background .3s; }
+.step-row:active { transform: scale(.98); }
+.step-list.edit .step-row { background: var(--lgray); }
+.step-box { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: transparent; box-shadow: inset 0 0 0 2.5px var(--gray); transition: background .3s, color .3s, box-shadow .3s; }
+.step-row.done .step-box { background: var(--c); color: #fff; box-shadow: none; }
+.step-ic { flex: none; display: grid; color: var(--dgray); }
+.step-name { flex: 1; min-width: 0; font-size: 16px; color: var(--black); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.step-row.done .step-name { color: var(--dgray); text-decoration: line-through; }
+.step-count { flex: none; font-size: 13px; color: var(--dgray); }
+.task-ring { cursor: pointer; }
+.parent-list { display: grid; gap: 8px; }
+.parent-row.on { box-shadow: 0 0 0 2px var(--dgray); }
+.parent-row > span { flex: 1; }
+.hold-clone.step-row { background: #fff; }
+.field-card .list-pill { background: var(--lgray); }

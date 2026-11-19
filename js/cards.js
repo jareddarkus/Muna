@@ -1,5 +1,5 @@
 // The habit card from "Main menu FINAL": 372×80 pill, 60px icon circle, title + flag line, 60px ring on the right.
-import { h, goalLabel, scheduleLabel, ringNumber } from './util.js';
+import { h, goalLabel, scheduleLabel, ringNumber, tap } from './util.js';
 import { icon, habitIcon } from './icons.js';
 import { PALETTE, hex, rateColor } from './colors.js';
 import { ring } from './ui.js';
@@ -68,3 +68,27 @@ export function rateRing() {
 }
 
 export const habitSub = (hb) => `${goalLabel(hb)} • ${scheduleLabel(hb.days)}`;
+
+/** Tasks have no color of their own: they are always dark gray. */
+export const TASK_COLOR = PALETTE.darkGray;
+
+/** Ring button for a task: steps done / steps (when it has steps), a check once done. Tapping it completes the task. */
+export function taskRing(onToggle) {
+  const r = ring({ size: 60, stroke: 6, color: TASK_COLOR });
+  const center = h('span', { class: 'ring-center small' });
+  const el = h('button', { type: 'button', class: 'ring-btn task-ring', 'aria-label': 'Mark done', onClick: (e) => { e.stopPropagation(); tap(); onToggle?.(); } }, r.el, center);
+  let key = null;
+  return {
+    el,
+    set(done, n, nDone) {
+      r.set(done ? 1 : n ? nDone / n : 0);
+      el.classList.toggle('done', done);
+      el.setAttribute('aria-label', done ? 'Mark as not done' : 'Mark done');
+      const k = done ? 'check' : n ? `${nDone}/${n}` : '';
+      if (k === key) return;
+      key = k;
+      if (done) center.replaceChildren(icon('check', { size: 37, stroke: 3.86 }));
+      else center.textContent = k;
+    },
+  };
+}

@@ -3,14 +3,14 @@ import { h, toast, debounce, timeAgo, goalLabel } from './util.js';
 import { icon, habitIcon } from './icons.js';
 import { PALETTE, COLORS, COLOR_NAMES, hex, rateColor } from './colors.js';
 import { avatar, segmented, openPanel, panelBar, dangerButton, toggleSwitch, iconCircle, closeAllPanels, confirmDialog } from './ui.js';
-import { card, rateRing, habitSub, flag } from './cards.js';
+import { card, rateRing, habitSub, flag, TASK_COLOR } from './cards.js';
 import { openIconPicker } from './editor.js';
 import { openProfile, personItems } from './profile.js';
 import { attachHold } from './hold.js';
 import {
   state, subscribe, bus, isMember, isAdmin, membersOf, profileOf, loadGroup, groupOverview, joinGroup, requestJoin, leaveGroup, deleteGroup, updateGroup,
   respondRequest, respondInvite, inviteUser, searchUsers, listPosts, createPost, deletePost, togglePostLike, listComments, addComment, deleteComment, toggleCommentLike,
-  copyHabit, habitList, refreshSocialNow,
+  copyHabit, copyTask, habitList, refreshSocialNow,
 } from './store.js';
 
 const fail = (e) => toast(e?.code === '23505' ? 'That name is already taken.' : e?.message || 'Something went wrong');
@@ -113,11 +113,13 @@ export function openGroup(gid) {
         canDelete ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Delete post', onClick: async () => { if (!(await confirmDialog({ title: 'Delete this post?', message: 'Its comments and likes will be removed too.' }))) return; try { await deletePost(p.id); posts = posts.filter((x) => x.id !== p.id); paintContent(); } catch (e) { fail(e); } } }, icon('trash', { size: 28, stroke: 1.8 })) : null),
       p.body ? h('p', { class: 'post-body' }, p.body) : null,
       p.habit ? habitAttachment(p) : null,
+      p.task ? taskAttachment(p) : null,
       h('footer', {}, likeBtn, comment));
     attachHold(art, () => [
       { label: liked ? 'Unlike' : 'Like', icon: 'heart', onSelect: () => likeBtn.click() },
       { label: 'Comments', icon: 'message-circle', onSelect: () => comment.click() },
       p.habit && p.author_id !== state.me.id ? { label: 'Copy habit', icon: 'copy', onSelect: () => art.querySelector('.shared-habit .pill')?.click() } : null,
+      p.task && p.author_id !== state.me.id ? { label: 'Copy task', icon: 'copy', onSelect: () => art.querySelector('.shared-habit .pill')?.click() } : null,
       canDelete ? { label: 'Delete', icon: 'trash', danger: true, onSelect: () => art.querySelector('.icon-btn')?.click() } : null,
     ]);
     return art;
@@ -132,6 +134,16 @@ export function openGroup(gid) {
     // you never copy your own habit; only other people's
     return h('div', { class: 'shared-habit', style: { '--c': hex(hb.color) } }, iconCircle(hb.icon, hex(hb.color), 48, 28),
       h('span', { class: 'sh-text' }, h('b', {}, hb.title), h('i', {}, habitSub(hb))), h('span', { class: 'sh-right' }, rr.el, p.author_id === state.me.id ? null : copy));
+  }
+  function taskAttachment(p) {
+    const t = p.task, count = (x) => (x.steps || []).reduce((n, c) => n + 1 + count(c), 0), n = count(t);
+    const copy = h('button', { type: 'button', class: 'pill small light', onClick: async () => {
+      copy.disabled = true;
+      try { await copyTask(t); toast('Added to your tasks'); } catch (er) { fail(er); }
+      copy.disabled = false;
+    } }, 'Copy');
+    return h('div', { class: 'shared-habit', style: { '--c': TASK_COLOR } }, iconCircle(t.icon, TASK_COLOR, 48, 28),
+      h('span', { class: 'sh-text' }, h('b', {}, t.title), h('i', {}, n ? `${n} ${n === 1 ? 'step' : 'steps'}` : 'Task')), h('span', { class: 'sh-right' }, p.author_id === state.me.id ? null : copy));
   }
   function pickHabit(done) {
     const pick = openPanel({ cls: 'picker-habit' });
