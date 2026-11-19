@@ -5,7 +5,7 @@ import { openPanel, panelBar } from './ui.js';
 const VIEW = 280, OUT = 512;
 
 export function openCropper(file, onDone) {
-  const panel = openPanel({ cls: 'cropper' });
+  const panel = openPanel({ cls: 'cropper', swipe: false });
   const stage = h('div', { class: 'crop-stage' });
   const img = new Image();
   const canvas = h('canvas', { class: 'crop-canvas', width: VIEW, height: VIEW });
