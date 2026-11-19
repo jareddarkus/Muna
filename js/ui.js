@@ -66,7 +66,7 @@ export function toggleSwitch(on, onChange) {
 const stack = [];
 const INTERACTIVE = 'button, a, input, select, textarea, label, summary, [role="button"], [role="switch"], [role="radio"], [role="tab"], [role="menuitem"], [tabindex]:not([tabindex="-1"]), .switch, .step-mid';
 /** tapClose: a tap on anything that isn't a control (blank space, labels, card backgrounds) closes the panel. */
-export function openPanel({ cls = '', onClose, tapClose = false } = {}) {
+export function openPanel({ cls = '', onClose, tapClose = false, swipe = true } = {}) {
   const backdrop = h('div', { class: 'backdrop' });
   const panel = h('div', { class: `panel ${cls}`, role: 'dialog', 'aria-modal': 'true' });
   const wrap = h('div', { class: 'panel-wrap' }, backdrop, panel);
@@ -86,6 +86,7 @@ export function openPanel({ cls = '', onClose, tapClose = false } = {}) {
   };
   stack.push(api);
   backdrop.addEventListener('click', () => api.close());
+  if (swipe) enableSwipeDown(panel, backdrop, api);
   if (tapClose) panel.addEventListener('click', (e) => { if (!e.target.closest?.(INTERACTIVE)) api.close(); }, true); // capture: decide before any handler redraws the DOM
   return api;
 }
@@ -140,4 +141,45 @@ export function iconCircle(ref, color, size = 60, iconSize) {
   const el = h('span', { class: 'icon-circle', style: { width: `${size}px`, height: `${size}px`, background: color } });
   el.append(habitIcon(ref, iconSize || Math.round(size * 0.57)));
   return el;
+}
+
+/** Pull a panel down to close it (like an iOS sheet). Inside scrolling content it only starts once the content is at the top. */
+function enableSwipeDown(panel, backdrop, api) {
+  let startY = 0, startX = 0, lastY = 0, lastT = 0, vel = 0, scroller = null, mode = 'idle', dy = 0;
+  const skip = (t) => t.closest?.('input, textarea, select, .crop-stage, .chips.scroll, [contenteditable="true"]');
+  panel.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1 || skip(e.target)) { mode = 'skip'; return; }
+    const t = e.touches[0];
+    startY = lastY = t.clientY; startX = t.clientX; lastT = e.timeStamp; vel = 0; dy = 0; mode = 'idle';
+    scroller = e.target.closest?.('.panel-body, .picker-scroll, .group-content, .scroll-y') || null;
+    if (scroller && !panel.contains(scroller)) scroller = null;
+  }, { passive: true });
+  panel.addEventListener('touchmove', (e) => {
+    if (mode === 'skip') return;
+    const t = e.touches[0];
+    if (mode === 'idle') {
+      const down = t.clientY - startY, side = Math.abs(t.clientX - startX);
+      if (down > 8 && down > side * 1.2 && (!scroller || scroller.scrollTop <= 0)) {
+        mode = 'drag'; startY = t.clientY; lastY = t.clientY; dy = 0;
+        panel.style.transition = 'none'; backdrop.style.transition = 'none';
+      } else if (down < -8 || side > 14) { mode = 'skip'; return; }
+      else return;
+    }
+    if (e.cancelable) e.preventDefault();
+    dy = Math.max(0, t.clientY - startY);
+    const dt = e.timeStamp - lastT; if (dt > 0) vel = (t.clientY - lastY) / dt; lastY = t.clientY; lastT = e.timeStamp;
+    panel.style.transform = `translate(-50%, ${dy}px)`;
+    backdrop.style.opacity = String(Math.max(0, 1 - dy / (panel.offsetHeight * 0.8)));
+  }, { passive: false });
+  const end = () => {
+    if (mode !== 'drag') { mode = 'idle'; return; }
+    mode = 'idle';
+    const close = dy > 110 || vel > 0.6;
+    panel.style.transition = ''; backdrop.style.transition = '';
+    if (close) { panel.style.transform = ''; backdrop.style.opacity = ''; api.close(); return; }
+    panel.style.transition = 'transform .4s var(--ease)'; panel.style.transform = ''; backdrop.style.opacity = '';
+    setTimeout(() => { panel.style.transition = ''; }, 420);
+  };
+  panel.addEventListener('touchend', end, { passive: true });
+  panel.addEventListener('touchcancel', end, { passive: true });
 }

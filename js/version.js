@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.6.4';
+export const VERSION = '2.7';
 
 export const CHANGELOG = [
+  {
+    version: '2.7',
+    date: 'November 19, 2026',
+    items: ['Swipe down on any screen or sheet to close it. Inside scrolling content it starts once you are at the top.'],
+  },
   {
     version: '2.6.4',
     date: 'November 19, 2026',
