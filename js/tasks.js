@@ -1,9 +1,9 @@
 // Tasks tab: looks and works like Today, but for one-off tasks (steps and sub-steps live inside each task).
 import { h, tween, shortDay, addDays } from './util.js';
 import { icon } from './icons.js';
-import { PALETTE } from './colors.js';
+import { PALETTE, hex } from './colors.js';
 import { ring } from './ui.js';
-import { card, taskRing, TASK_COLOR } from './cards.js';
+import { card, taskRing } from './cards.js';
 import { state, subscribe, tasksOn, taskList, isTaskDone, setTaskDone, setTaskDay, shiftTaskDay, stepCount, taskPath, taskProgress, HISTORY_DAYS, MAX_AHEAD } from './store.js';
 import { taskDayProgress } from './rates.js';
 import { attachHold } from './hold.js';
@@ -75,8 +75,8 @@ export function mountTasks(root) {
       const done = isTaskDone(tk), sc = stepCount(tk.id), path = taskPath(tk);
       const late = !done && tk.day < day ? `Due ${shortDay(tk.day)}` : '';
       const sub = [late, path ? `in ${path}` : '', sc.n ? `${sc.done}/${sc.n} steps` : ''].filter(Boolean).join(' • ') || (tk.parent_id ? 'Step' : 'Task');
-      c.set({ color: TASK_COLOR, icon: tk.icon, name: tk.title, sub, done });
-      c.tr.set(done, sc.n > 0, taskProgress(tk.id, idx));
+      c.set({ color: hex(tk.color), icon: tk.icon, name: tk.title, sub, done });
+      c.tr.set(done, sc.n > 0, taskProgress(tk.id, idx), hex(tk.color));
       (done ? finished : pending).push(c);
     }
     const order = [...pending.map((c) => c.el), ...(pending.length && finished.length ? [divider] : []), ...finished.map((c) => c.el)];

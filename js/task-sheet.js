@@ -2,8 +2,7 @@
 import { h, tap } from './util.js';
 import { icon, habitIcon } from './icons.js';
 import { openPanel, panelBar } from './ui.js';
-import { TASK_COLOR } from './cards.js';
-import { PALETTE } from './colors.js';
+import { PALETTE, hex } from './colors.js';
 import { state, subscribe, childrenOf, isTaskDone, setTaskDone, stepCount, taskPath, taskProgress } from './store.js';
 import { attachHold } from './hold.js';
 import { openTaskEditor } from './task-editor.js';
@@ -13,7 +12,6 @@ export function openTask(id) {
   if (!state.tasks.get(id)) return;
   let unsub = () => {};
   const panel = openPanel({ cls: 'habit-panel task-panel', onClose: () => unsub(), tapClose: true });
-  panel.el.style.setProperty('--c', TASK_COLOR);
 
   const edit = h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Edit', onClick: () => { panel.close(); setTimeout(() => openTaskEditor({ id }), 150); } }, icon('pencil', { size: 26, stroke: 1.8 }));
   const titleEl = h('span', { class: 'habit-bar-title' });
@@ -41,6 +39,7 @@ export function openTask(id) {
     if (!t) { panel.close(); return; }
     const done = isTaskDone(t);
     titleEl.textContent = t.title;
+    panel.el.style.setProperty('--c', hex(t.color));
     const sc0 = stepCount(id), pr = Math.round(taskProgress(id) * 100);
     const p = [taskPath(t) ? `in ${taskPath(t)}` : '', sc0.n ? `${done ? 100 : Math.min(99, pr)}% done` : ''].filter(Boolean).join(' • '); path.textContent = p; path.hidden = !p;
     about.textContent = t.description || ''; about.hidden = !t.description;

@@ -398,7 +398,7 @@ export async function duplicateTask(id, { parentId, day } = {}) {
   const now = Date.now(); let n = 0;
   const rows = [];
   const copy = (src, parent, isRoot) => {
-    const row = { id: uuid(), owner_id: state.me.id, parent_id: parent, title: isRoot ? `${src.title} copy`.slice(0, 80) : src.title, icon: src.icon, description: src.description || '',
+    const row = { id: uuid(), owner_id: state.me.id, parent_id: parent, title: isRoot ? `${src.title} copy`.slice(0, 80) : src.title, icon: src.icon, color: src.color || 'purple', description: src.description || '',
       day: isRoot && day !== undefined ? day : src.day, done_at: null, created_at: new Date(now + n++).toISOString() };
     rows.push(row);
     childrenOf(src.id).forEach((c) => copy(c, row.id, false));
@@ -412,7 +412,7 @@ export async function duplicateTask(id, { parentId, day } = {}) {
 /** Snapshot of a task and its steps for sharing (no days, nothing completed). */
 export function taskSnapshot(id) {
   const t = state.tasks.get(id);
-  return { title: t.title, icon: t.icon, description: t.description || '', steps: childrenOf(id).map((c) => taskSnapshot(c.id)) };
+  return { title: t.title, icon: t.icon, color: t.color || 'purple', description: t.description || '', steps: childrenOf(id).map((c) => taskSnapshot(c.id)) };
 }
 /** Adds a shared task (and its steps) as a new top-level task due today. */
 export async function copyTask(snap) {
@@ -420,7 +420,7 @@ export async function copyTask(snap) {
   if (taskList().some((t) => !t.parent_id && !t.done_at && t.title.trim().toLowerCase() === String(snap.title).trim().toLowerCase() && childrenOf(t.id).length === count(snap))) throw new Error('You already have this task.');
   const now = Date.now(); let n = 0; const rows = [];
   const walk = (s, parent, isRoot) => {
-    const row = { id: uuid(), owner_id: state.me.id, parent_id: parent, title: String(s.title).slice(0, 80), icon: s.icon || 'outline:list-check', description: s.description || '', day: isRoot ? state.today : null, done_at: null, created_at: new Date(now + n++).toISOString() };
+    const row = { id: uuid(), owner_id: state.me.id, parent_id: parent, title: String(s.title).slice(0, 80), icon: s.icon || 'outline:list-check', color: s.color || 'purple', description: s.description || '', day: isRoot ? state.today : null, done_at: null, created_at: new Date(now + n++).toISOString() };
     rows.push(row);
     (s.steps || []).forEach((c) => walk(c, row.id, false));
   };

@@ -1,6 +1,6 @@
 // Create / edit a habit, plus the icon picker (every Tabler icon, outline and filled).
 import { h, WEEKDAYS, debounce, toast, clamp } from './util.js';
-import { icon, habitIcon, loadIndex, searchIcons, parseRef } from './icons.js';
+import { icon, habitIcon, loadIndex, searchIcons, iconRefs, parseRef } from './icons.js';
 import { COLORS, COLOR_NAMES, PALETTE, hex, colorKey } from './colors.js';
 import { openPanel, panelBar, segmented, dangerButton, toggleSwitch, iconCircle } from './ui.js';
 import { state, saveHabit, deleteHabit, saveReminder } from './store.js';
@@ -109,7 +109,6 @@ export function openEditor(id = null) {
 export function openIconPicker(draft, onPick) {
   const panel = openPanel({ cls: 'picker' });
   panel.el.style.setProperty('--c', draft.color === 'task' ? PALETTE.darkGray : hex(draft.color));
-  let { style } = parseRef(draft.icon);
   let query = '', results = [], shown = 0, all = null;
   const BATCH = 150;
   const count = h('span', { class: 'picker-count' }, 'Loading icons…');
@@ -117,13 +116,11 @@ export function openIconPicker(draft, onPick) {
   const sentinel = h('div', { class: 'sentinel' });
   const scroller = h('div', { class: 'panel-body picker-scroll' }, grid, sentinel);
   const input = h('input', { class: 'pill-input search', type: 'search', placeholder: 'Search icons: water, run, book…', autocomplete: 'off', autocapitalize: 'off', spellcheck: false, onInput: debounce((e) => { query = e.target.value; run(); }, 90) });
-  const seg = segmented([['outline', 'Outline'], ['filled', 'Filled']], style, (v) => { style = v; run(); });
   const chips = h('div', { class: 'chips scroll' }, SUGGESTIONS.map((s) => h('button', { type: 'button', class: 'chip', onClick: () => { input.value = s; query = s; run(); } }, s)));
-  panel.el.append(panelBar(panel, { title: 'Choose icon' }), h('div', { class: 'picker-top' }, input, seg.el, chips, count), scroller);
-  const cur = parseRef(draft.icon);
-  const cell = (i) => {
-    const ref = `${style}:${i[0]}`;
-    return h('button', { type: 'button', class: `icon-cell ${draft.icon === ref ? 'on' : ''}`, title: i[0].replace(/-/g, ' '), 'aria-label': i[0].replace(/-/g, ' '), onClick: () => { onPick(ref); panel.close(); } }, habitIcon(ref, 30, 1.5));
+  panel.el.append(panelBar(panel, { title: 'Choose icon' }), h('div', { class: 'picker-top' }, input, chips, count), scroller);
+  const cell = (ref) => {
+    const nm = parseRef(ref).name.replace(/-/g, ' ');
+    return h('button', { type: 'button', class: `icon-cell ${draft.icon === ref ? 'on' : ''}`, title: nm, 'aria-label': nm, onClick: () => { onPick(ref); panel.close(); } }, habitIcon(ref, 30, 1.5));
   };
   function more() {
     const next = results.slice(shown, shown + BATCH);
@@ -132,10 +129,10 @@ export function openIconPicker(draft, onPick) {
     sentinel.hidden = shown >= results.length;
   }
   function run() {
-    results = searchIcons(all, query, style);
-    if (!query && cur.style === style) { const k = results.findIndex((i) => i[0] === cur.name); if (k > 0) results.unshift(results.splice(k, 1)[0]); }
+    results = iconRefs(searchIcons(all, query));
+    if (!query) { const k = results.indexOf(draft.icon); if (k > 0) results.unshift(results.splice(k, 1)[0]); }
     grid.replaceChildren(); shown = 0; scroller.scrollTop = 0;
-    count.textContent = results.length ? `${results.length.toLocaleString()} ${style} icons` : 'No icons found, try another word';
+    count.textContent = results.length ? `${results.length.toLocaleString()} icons` : 'No icons found, try another word';
     more();
   }
   new IntersectionObserver((e) => { if (e[0].isIntersecting && shown < results.length) more(); }, { root: scroller, rootMargin: '600px' }).observe(sentinel);
