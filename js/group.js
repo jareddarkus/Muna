@@ -142,7 +142,8 @@ export function openGroup(gid) {
       try { await copyTask(t); toast('Added to your tasks'); } catch (er) { fail(er); }
       copy.disabled = false;
     } }, 'Copy');
-    return h('div', { class: 'shared-habit', style: { '--c': TASK_COLOR } }, iconCircle(t.icon, TASK_COLOR, 48, 28),
+    const tc = t.color ? hex(t.color) : TASK_COLOR;
+    return h('div', { class: 'shared-habit', style: { '--c': tc } }, iconCircle(t.icon, tc, 48, 28),
       h('span', { class: 'sh-text' }, h('b', {}, t.title), h('i', {}, n ? `${n} ${n === 1 ? 'step' : 'steps'}` : 'Task')), h('span', { class: 'sh-right' }, p.author_id === state.me.id ? null : copy));
   }
   function pickHabit(done) {

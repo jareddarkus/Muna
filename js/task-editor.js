@@ -1,30 +1,34 @@
 // Create / edit a task, step or sub-step: name + icon, description, day, parent, and its own steps.
 import { h, toast } from './util.js';
 import { icon, habitIcon } from './icons.js';
-import { PALETTE } from './colors.js';
+import { COLORS, COLOR_NAMES, PALETTE, hex, colorKey } from './colors.js';
 import { openPanel, panelBar, dangerButton, toggleSwitch } from './ui.js';
 import { state, subscribe, saveTask, deleteTask, duplicateTask, childrenOf, descendantIds, taskPath, taskList, isTaskDone } from './store.js';
 import { openIconPicker } from './editor.js';
-import { TASK_COLOR } from './cards.js';
 
 /** openTaskEditor({ id }) edits; openTaskEditor({ parentId?, day? }) creates a task (no parent) or a step (with a parent). */
 export function openTaskEditor({ id = null, parentId = null, day = null } = {}) {
   const existing = id ? state.tasks.get(id) : null;
   if (id && !existing) return;
   const draft = existing
-    ? { title: existing.title, icon: existing.icon, description: existing.description || '', day: existing.day, parent: existing.parent_id }
-    : { title: '', icon: 'outline:list-check', description: '', day: parentId ? day : day || state.taskDay, parent: parentId };
+    ? { title: existing.title, icon: existing.icon, color: colorKey(existing.color), description: existing.description || '', day: existing.day, parent: existing.parent_id }
+    : { title: '', icon: 'outline:list-check', color: parentId && state.tasks.get(parentId) ? colorKey(state.tasks.get(parentId).color) : 'purple', description: '', day: parentId ? day : day || state.taskDay, parent: parentId };
   let savedId = existing?.id || null; // set once the task exists (so steps can be added before the final save)
   let unsub = () => {};
   const panel = openPanel({ cls: 'editor', onClose: () => unsub(), tapClose: true });
-  panel.el.style.setProperty('--c', TASK_COLOR);
+  const paintColor = () => panel.el.style.setProperty('--c', hex(draft.color));
+  paintColor();
   const isStep = () => !!draft.parent;
   const heading = () => `${savedId ? 'Edit' : 'New'} ${isStep() ? 'step' : 'task'}`;
 
-  const circle = h('button', { type: 'button', class: 'name-circle', 'aria-label': 'Choose icon', onClick: () => openIconPicker({ icon: draft.icon, color: 'task' }, (ref) => { draft.icon = ref; paintIcon(); }) });
+  const circle = h('button', { type: 'button', class: 'name-circle', 'aria-label': 'Choose icon', onClick: () => openIconPicker({ icon: draft.icon, color: draft.color }, (ref) => { draft.icon = ref; paintIcon(); }) });
   const paintIcon = () => circle.replaceChildren(habitIcon(draft.icon, 26, 1.7));
   const name = h('input', { class: 'name-input', type: 'text', placeholder: 'Type here...', maxLength: 80, value: draft.title, autocomplete: 'off', enterKeyHint: 'done', onInput: (e) => { draft.title = e.target.value; validate(); } });
   const about = h('textarea', { class: 'about-input', rows: 3, maxLength: 1000, placeholder: 'Description (optional)', value: draft.description, onInput: (e) => { draft.description = e.target.value; } });
+
+  const swatches = h('div', { class: 'swatches', role: 'radiogroup', 'aria-label': 'Color' }, COLORS.map((k) =>
+    h('button', { type: 'button', class: `swatch ${k === draft.color ? 'on' : ''}`, 'data-k': k, role: 'radio', 'aria-label': COLOR_NAMES[k], style: { background: PALETTE[k] },
+      onClick: () => { draft.color = k; paintColor(); swatches.querySelectorAll('.swatch').forEach((b) => b.classList.toggle('on', b.dataset.k === k)); } })));
 
   // day: always for a task, optional for a step
   const dayInput = h('input', { class: 'pill-input date-input', type: 'date', value: draft.day || state.taskDay, 'aria-label': 'Day', onChange: (e) => { if (e.target.value) draft.day = e.target.value; } });
@@ -69,7 +73,7 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
   unsub = subscribe(() => { if (savedId && !state.tasks.has(savedId)) { panel.close(); return; } paintSteps(); });
 
   async function persist() {
-    const row = { id: savedId || undefined, title: draft.title.trim(), icon: draft.icon, description: draft.description.trim(), day: isStep() ? draft.day : draft.day || state.taskDay, parent_id: draft.parent };
+    const row = { id: savedId || undefined, title: draft.title.trim(), icon: draft.icon, color: draft.color, description: draft.description.trim(), day: isStep() ? draft.day : draft.day || state.taskDay, parent_id: draft.parent };
     savedId = await saveTask(row);
     paintParent(); paintSteps();
   }
@@ -93,6 +97,7 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
   panel.el.append(bar,
     h('div', { class: 'panel-body' },
       h('div', { class: 'name-pill' }, circle, name),
+      h('section', { class: 'field-card' }, h('h3', {}, 'Color'), swatches),
       h('section', { class: 'field-card' }, h('h3', {}, 'Description'), about),
       h('section', { class: 'field-card' }, dayHead, dayInput),
       h('section', { class: 'field-card' }, h('h3', {}, 'Belongs to'), parentRow),

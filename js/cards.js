@@ -82,7 +82,8 @@ export function taskRing() {
   const api = {
     el, ring: r, filling: false,
     /** progress is 0..1 of the steps (only used when the task has steps). */
-    set(done, hasSteps, progress) {
+    set(done, hasSteps, progress, color) {
+      if (color) r.color(color);
       if (!api.filling) r.set(done ? 1 : hasSteps ? progress : 0);
       el.classList.toggle('done', done);
       el.setAttribute('aria-label', done ? 'Mark as not done' : 'Mark done');

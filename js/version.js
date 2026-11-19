@@ -1,7 +1,15 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.9.2';
+export const VERSION = '2.10';
 
 export const CHANGELOG = [
+  {
+    version: '2.10',
+    date: 'November 19, 2026',
+    items: [
+      'Tasks (and steps) can now have a color, like habits. The gray circle in Reports stays as the one icon that stands for all your tasks.',
+      'Choosing an icon: outline and filled are now mixed in one list, with no filter. Each icon shows up in both styles next to each other.',
+    ],
+  },
   {
     version: '2.9.2',
     date: 'November 19, 2026',

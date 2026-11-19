@@ -55,14 +55,13 @@ export function loadIndex() {
   return indexPromise;
 }
 
-export function searchIcons(all, query, style) {
-  const want = style === 'filled' ? 2 : 1;
+/** Icons matching the words (outline and filled together). Returns index rows. */
+export function searchIcons(all, query) {
   const q = query.trim().toLowerCase().replace(/[_\s]+/g, ' ');
-  const pool = all.filter((i) => i[2] & want);
-  if (!q) return pool;
+  if (!q) return all;
   const terms = q.split(' ');
   const out = [];
-  for (const i of pool) {
+  for (const i of all) {
     const name = i[0].replace(/-/g, ' ');
     let s = 0;
     if (name === q) s = 100;
@@ -73,3 +72,5 @@ export function searchIcons(all, query, style) {
   }
   return out.sort((a, b) => b[0] - a[0] || a[1][0].length - b[1][0].length).map((x) => x[1]);
 }
+/** One cell per style: each icon shows up as outline and, when it exists, filled right next to it. */
+export const iconRefs = (rows) => rows.flatMap((i) => [...(i[2] & 1 ? [`outline:${i[0]}`] : []), ...(i[2] & 2 ? [`filled:${i[0]}`] : [])]);

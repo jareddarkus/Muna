@@ -1,7 +1,8 @@
 // Press-and-hold menu and sharing for tasks, steps and sub-steps.
 import { h, toast } from './util.js';
 import { openPanel, panelBar, confirmDialog } from './ui.js';
-import { card, TASK_COLOR } from './cards.js';
+import { card } from './cards.js';
+import { hex } from './colors.js';
 import { state, isTaskDone, setTaskDone, deleteTask, duplicateTask, myGroups, createPost, taskSnapshot } from './store.js';
 import { openTask } from './task-sheet.js';
 import { openTaskEditor } from './task-editor.js';
@@ -17,7 +18,7 @@ export function shareTask(t) {
   const panel = openPanel({ cls: 'picker-habit short', tapClose: true });
   const list = h('div', { class: 'cards' }, groups.map((g) => {
     const c = card({ onClick: () => { panel.close(); post(g); } });
-    c.set({ color: TASK_COLOR, icon: g.icon, name: g.name, sub: 'Share here', done: false, showFlag: false });
+    c.set({ color: hex(g.color), icon: g.icon, name: g.name, sub: 'Share here', done: false, showFlag: false });
     return c.el;
   }));
   panel.el.append(panelBar(panel, { title: 'Share to…' }), h('div', { class: 'panel-body' }, list));
