@@ -1,7 +1,16 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.0.2';
+export const VERSION = '2.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.1',
+    date: 'November 19, 2026',
+    items: [
+      'Press and hold: the item lifts, the background blurs, and a small menu appears next to it. A normal tap still works as before.',
+      'Habits: Log, Edit, Share to a group, Reset this day, Delete. Also on posts, comments, people, groups and your photo.',
+      'The log screen is now a compact sheet, at most 60% of the screen tall.',
+    ],
+  },
   {
     version: '2.0.2',
     date: 'November 19, 2026',

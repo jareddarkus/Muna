@@ -5,8 +5,9 @@ import { PALETTE, COLORS, COLOR_NAMES, hex } from './colors.js';
 import { avatar, segmented, openPanel, panelBar, toggleSwitch, confirmDialog } from './ui.js';
 import { card, rateRing } from './cards.js';
 import { openIconPicker } from './editor.js';
-import { openGroup } from './group.js';
-import { openProfile } from './profile.js';
+import { openGroup, groupItems } from './group.js';
+import { attachHold } from './hold.js';
+import { openProfile, personItems } from './profile.js';
 import {
   state, subscribe, myGroups, friendsOf, incomingRequests, outgoingRequests, profileOf, searchGroups, recommendedGroups, searchUsers,
   acceptFriend, removeFriendship, respondInvite, respondRequest, createGroup, joinGroup, requestJoin, addFriendById, memberRate, friendshipWith, refreshSocialNow,
@@ -51,6 +52,7 @@ export function mountSocial(root) {
     c.set({ color: hex('purple'), icon: null, name: `@${p.username}`, sub: sub ?? (p.about || 'No About me yet'), done: false, showFlag: false });
     c.circle.replaceChildren(avatar(p, 60)); c.el.classList.add('person');
     if (right) c.slot.append(right);
+    if (!onClick) attachHold(c.el, () => personItems(p.id));
     return c.el;
   }
   function rateFor(uid) {
@@ -66,6 +68,7 @@ export function mountSocial(root) {
     c.set({ color: hex(g.color), icon: g.icon, name: g.name, sub: `${members ?? '–'} member${members === 1 ? '' : 's'} • ${g.is_public ? 'Public' : 'Private'}`, done: false, showFlag: false });
     const rr = rateRing(); rr.set(rate ?? null); c.slot.append(rr.el);
     if (status === 'invited') c.el.classList.add('invited');
+    attachHold(c.el, () => groupItems(state.groups.get(g.id) || g));
     return c.el;
   }
   const section = (title, els) => (els.length ? [h('h3', { class: 'list-title' }, title), ...els] : []);

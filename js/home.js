@@ -9,6 +9,8 @@ import { todayProgress } from './rates.js';
 import { liveValue, isRunning, onTick, discardMissing } from './timer.js';
 import { openHabit } from './habit.js';
 import { openEditor } from './editor.js';
+import { attachHold } from './hold.js';
+import { habitItems } from './habit-actions.js';
 
 export function mountHome(root) {
   const title = h('button', { type: 'button', class: 'day-title', 'aria-label': 'Jump to today', onClick: () => setViewDay(state.today) });
@@ -32,7 +34,9 @@ export function mountHome(root) {
     const c = card({ onClick: () => openHabit(hb.id, state.viewDay) });
     const rb = progressRing();
     c.slot.append(rb.el);
-    return { ...c, rb, hb };
+    const comp = { ...c, rb, hb };
+    attachHold(c.el, () => habitItems(comp.hb));
+    return comp;
   }
 
   function update() {

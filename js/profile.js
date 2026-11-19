@@ -8,6 +8,25 @@ import { state, subscribe, profileOf, memberRate, friendHabits, friendshipWith, 
 
 const fail = (e) => toast(e?.message || 'Something went wrong');
 
+/** Press-and-hold menu for a person (friends list, group members, search results). */
+export function personItems(uid, { groupId } = {}) {
+  if (uid === state.me.id) return [{ label: 'View profile', icon: 'eye', onSelect: () => openProfile(uid) }];
+  const fr = friendshipWith(uid), p = profileOf(uid);
+  const items = [{ label: 'View profile', icon: 'eye', onSelect: () => openProfile(uid, { groupId }) }];
+  if (!fr) items.push({ label: 'Add friend', icon: 'user-plus', onSelect: () => addFriendById(uid).then(() => toast('Request sent')).catch(fail) });
+  else if (fr.status === 'pending' && fr.addressee_id === state.me.id) items.push({ label: 'Accept request', icon: 'user-check', onSelect: () => acceptFriend(fr.id).catch(fail) });
+  else if (fr.status === 'pending') items.push({ label: 'Cancel request', icon: 'user-x', onSelect: async () => { if (await confirmDialog({ title: 'Cancel your request?', message: `Your friend request to @${p.username} will be withdrawn.`, confirm: 'Cancel request', cancel: 'Keep it' })) removeFriendship(fr.id).catch(fail); } });
+  else items.push({ label: 'Remove friend', icon: 'user-minus', danger: true, onSelect: async () => { if (await confirmDialog({ title: 'Remove friend?', message: `You and @${p.username} will no longer see each other's habits.`, confirm: 'Remove' })) removeFriendship(fr.id).catch(fail); } });
+  if (groupId && isAdmin(groupId)) {
+    const m = membersOf(groupId).find((x) => x.user_id === uid);
+    if (m) {
+      items.push(m.role === 'admin' ? { label: 'Remove admin', icon: 'crown', onSelect: () => setRole(groupId, uid, 'member').catch(fail) } : { label: 'Make admin', icon: 'crown', onSelect: () => setRole(groupId, uid, 'admin').catch(fail) });
+      if (m.role !== 'admin') items.push({ label: 'Remove from group', icon: 'user-x', danger: true, onSelect: async () => { if (await confirmDialog({ title: 'Remove from group?', message: `@${p.username} will lose access to this group's posts.`, confirm: 'Remove' })) kickMember(groupId, uid).catch(fail); } });
+    }
+  }
+  return items;
+}
+
 export function openProfile(uid, { groupId } = {}) {
   let unsub = () => {};
   const panel = openPanel({ cls: 'profile', onClose: () => unsub() });

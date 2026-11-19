@@ -1,12 +1,13 @@
 // Account: photo (with crop), username, About me, notifications, updates, sign out.
 import { h, toast } from './util.js';
 import { icon } from './icons.js';
-import { avatar, toggleSwitch, dangerButton } from './ui.js';
+import { avatar, toggleSwitch, dangerButton, confirmDialog } from './ui.js';
+import { attachHold } from './hold.js';
 import { openCropper } from './cropper.js';
 import { openUpdates, hasUnseenUpdate } from './updates.js';
 import { VERSION } from './version.js';
 import { permissionState, isEnabled, enablePush, disablePush, sendTest } from './push.js';
-import { state, subscribe, updateProfile, setAvatar, signOut } from './store.js';
+import { state, subscribe, updateProfile, setAvatar, removeAvatar, signOut } from './store.js';
 import { overallRate } from './rates.js';
 
 const USERNAME = /^[a-z0-9_]{3,20}$/;
@@ -16,6 +17,10 @@ export function mountAccount(root) {
   const avHost = h('div', { class: 'avatar-host' });
   const file = h('input', { type: 'file', accept: 'image/*', hidden: true, onChange: () => { const f = file.files[0]; file.value = ''; if (f) openCropper(f, setAvatar); } });
   const photo = h('button', { type: 'button', class: 'photo-btn', 'aria-label': 'Change photo', onClick: () => (state.demo ? toast('Sign in with Google to add a photo.') : file.click()) }, avHost, h('span', { class: 'photo-edit' }, icon('camera', { size: 30, stroke: 1.8 })));
+  attachHold(photo, () => state.demo ? null : [
+    { label: 'Change photo', icon: 'camera', onSelect: () => file.click() },
+    state.me?.avatar_url ? { label: 'Remove photo', icon: 'photo-off', danger: true, onSelect: async () => { if (await confirmDialog({ title: 'Remove your photo?', message: 'Your initial will be shown instead.', confirm: 'Remove' })) removeAvatar().then(() => toast('Photo removed')).catch(fail); } } : null,
+  ]);
   const userInput = h('input', { class: 'pill-input', type: 'text', maxLength: 20, placeholder: 'username', autocapitalize: 'off', autocomplete: 'off', spellcheck: false });
   const aboutInput = h('textarea', { class: 'about-input', maxLength: 160, rows: 3, placeholder: 'A few words about you or your goals…' });
   const counter = h('span', { class: 'counter' });
