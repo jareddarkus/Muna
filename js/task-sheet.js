@@ -12,7 +12,7 @@ import { taskItems } from './task-actions.js';
 export function openTask(id) {
   if (!state.tasks.get(id)) return;
   let unsub = () => {};
-  const panel = openPanel({ cls: 'habit-panel task-panel', onClose: () => unsub() });
+  const panel = openPanel({ cls: 'habit-panel task-panel', onClose: () => unsub(), tapClose: true });
   panel.el.style.setProperty('--c', TASK_COLOR);
 
   const edit = h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Edit', onClick: () => { panel.close(); setTimeout(() => openTaskEditor({ id }), 150); } }, icon('pencil', { size: 26, stroke: 1.8 }));

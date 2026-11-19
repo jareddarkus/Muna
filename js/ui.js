@@ -64,7 +64,9 @@ export function toggleSwitch(on, onChange) {
 
 // ───────────── panels (slide-up screens) ─────────────
 const stack = [];
-export function openPanel({ cls = '', onClose } = {}) {
+const INTERACTIVE = 'button, a, input, select, textarea, label, summary, [role="button"], [role="switch"], [role="radio"], [role="tab"], [role="menuitem"], [tabindex]:not([tabindex="-1"]), .switch, .step-mid';
+/** tapClose: a tap on anything that isn't a control (blank space, labels, card backgrounds) closes the panel. */
+export function openPanel({ cls = '', onClose, tapClose = false } = {}) {
   const backdrop = h('div', { class: 'backdrop' });
   const panel = h('div', { class: `panel ${cls}`, role: 'dialog', 'aria-modal': 'true' });
   const wrap = h('div', { class: 'panel-wrap' }, backdrop, panel);
@@ -84,6 +86,7 @@ export function openPanel({ cls = '', onClose } = {}) {
   };
   stack.push(api);
   backdrop.addEventListener('click', () => api.close());
+  if (tapClose) panel.addEventListener('click', (e) => { if (!e.target.closest?.(INTERACTIVE)) api.close(); }, true); // capture: decide before any handler redraws the DOM
   return api;
 }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && stack.length) stack[stack.length - 1].close(); });

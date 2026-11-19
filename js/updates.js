@@ -9,7 +9,7 @@ const markSeen = () => { try { localStorage.setItem(SEEN, VERSION); } catch {} }
 
 export function openUpdates(onSeen) {
   markSeen(); onSeen?.();
-  const panel = openPanel({ cls: 'updates' });
+  const panel = openPanel({ cls: 'updates', tapClose: true });
   const reload = h('button', { type: 'button', class: 'pill block', onClick: async () => {
     reload.disabled = true; reload.textContent = 'Reloading…';
     try { const regs = await navigator.serviceWorker?.getRegistrations?.(); await Promise.all((regs || []).map((r) => r.update())); } catch {}

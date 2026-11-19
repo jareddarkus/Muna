@@ -18,7 +18,7 @@ export function openHabit(id, day = state.viewDay) {
   if (!first) return;
   const isToday = day === state.today, future = day > state.today;
   let unsub = () => {}, unTick = () => {};
-  const panel = openPanel({ cls: 'habit-panel', onClose: () => { unsub(); unTick(); } });
+  const panel = openPanel({ cls: 'habit-panel', onClose: () => { unsub(); unTick(); }, tapClose: true });
 
   const edit = h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Edit habit', onClick: () => { panel.close(); setTimeout(() => openEditor(id), 150); } }, icon('pencil', { size: 26, stroke: 1.8 }));
   const titleEl = h('span', { class: 'habit-bar-title' });
@@ -67,8 +67,6 @@ export function openHabit(id, day = state.viewDay) {
     panel.el.classList.toggle('running', running);
     panel.el.classList.toggle('done', done);
   }
-  // Tap anywhere that isn't a button closes the sheet (easier than reaching for the X).
-  panel.el.addEventListener('click', (e) => { if (!e.target.closest('button, a, input, select, textarea')) panel.close(); });
   unsub = subscribe(update);
   unTick = onTick(update);
   update();

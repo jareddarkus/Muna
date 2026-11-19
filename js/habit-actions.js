@@ -16,7 +16,7 @@ export function shareHabit(hb) {
   if (!groups.length) { toast('Join or create a group first (Social tab).'); return; }
   const post = async (g) => { try { await createPost(g.id, '', hb); toast(`Shared to ${g.name}`); } catch (e) { fail(e); } };
   if (groups.length === 1) { post(groups[0]); return; }
-  const panel = openPanel({ cls: 'picker-habit short' });
+  const panel = openPanel({ cls: 'picker-habit short', tapClose: true });
   const list = h('div', { class: 'cards' }, groups.map((g) => {
     const c = card({ onClick: () => { panel.close(); post(g); } });
     c.set({ color: hex(g.color), icon: g.icon, name: g.name, sub: 'Share here', done: false, showFlag: false });
