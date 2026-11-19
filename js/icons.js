@@ -5,22 +5,22 @@ import { sz } from './util.js';
 const NS = 'http://www.w3.org/2000/svg';
 const OUT_ATTRS = { fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' };
 
-function svg(markup, filled, size) {
+function svg(markup, filled, size, stroke = 2) {
   const el = document.createElementNS(NS, 'svg');
   el.setAttribute('viewBox', '0 0 24 24');
   el.setAttribute('width', sz(size));
   el.setAttribute('height', sz(size));
   el.setAttribute('aria-hidden', 'true');
   if (filled) el.setAttribute('fill', 'currentColor');
-  else for (const [k, v] of Object.entries(OUT_ATTRS)) el.setAttribute(k, v);
+  else for (const [k, v] of Object.entries({ ...OUT_ATTRS, 'stroke-width': String(stroke) })) el.setAttribute(k, v);
   el.innerHTML = markup || '';
   return el;
 }
 
 /** Built-in interface icon (instant, synchronous). */
-export function icon(name, { filled = false, size = 22 } = {}) {
+export function icon(name, { filled = false, size = 24, stroke = 2 } = {}) {
   const i = UI[name];
-  return svg(i && (filled && i.f ? i.f : i.o), filled && !!i?.f, size);
+  return svg(i && (filled && i.f ? i.f : i.o), filled && !!i?.f, size, stroke);
 }
 
 // ── habit icons (a ref looks like "outline:home" or "filled:home") ──
@@ -40,11 +40,11 @@ function loadShard(style, name) {
 }
 
 /** Habit icon element. Fills in as soon as its shard arrives (usually instantly from cache). */
-export function habitIcon(ref, size = 24) {
+export function habitIcon(ref, size = 34, stroke = 1.4) {
   const { style, name } = parseRef(ref);
   const filled = style === 'filled';
   const shard = loadShard(style, name);
-  const host = svg(shard.data?.[name], filled, size);
+  const host = svg(shard.data?.[name], filled, size, stroke);
   if (!shard.data) shard.promise.then((d) => { host.innerHTML = d[name] || ''; });
   return host;
 }

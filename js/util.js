@@ -27,7 +27,7 @@ export function append(el, kids) {
 export const clear = (el) => { el.replaceChildren(); return el; };
 
 /** The whole interface is drawn slightly smaller than its design sizes. */
-export const UI_SCALE = 0.94;
+export const UI_SCALE = 1;
 export const sz = (n) => Math.round(n * UI_SCALE);
 
 // ── dates (all "days" are local calendar days as YYYY-MM-DD strings) ──
@@ -99,4 +99,42 @@ export function toast(msg, ms = 2600) {
   requestAnimationFrame(() => toastEl.classList.add('show'));
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms);
+}
+
+export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+/** "18 Nov" */
+export const shortDay = (s) => `${parseDay(s).getDate()} ${MONTHS[parseDay(s).getMonth()]}`;
+export function timeAgo(iso) {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return 'now';
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h`;
+  if (s < 604800) return `${Math.floor(s / 86400)}d`;
+  return shortDay(ymd(new Date(iso)));
+}
+/** Goal text: "5h", "25 m", "Once", "8 glasses" */
+export function goalLabel(hb) {
+  if (hb.goal_type === 'time') {
+    const m = Math.round(hb.target / 60);
+    return m >= 60 ? `${+(m / 60).toFixed(1)}h` : `${m} m`;
+  }
+  return hb.target === 1 && !hb.unit ? 'Once' : `${hb.target} ${hb.unit || (hb.target === 1 ? 'time' : 'times')}`;
+}
+/** "Daily", "Mon - Sat", "Mon, Wed, Fri" */
+export function scheduleLabel(days) {
+  const d = [...new Set(days)].sort((a, b) => a - b);
+  if (d.length === 7) return 'Daily';
+  const order = [1, 2, 3, 4, 5, 6, 0]; // weeks start on Monday
+  const idx = order.map((x) => d.includes(x));
+  let start = idx.indexOf(true), end = idx.lastIndexOf(true);
+  if (start >= 0 && d.length >= 3 && idx.slice(start, end + 1).every(Boolean)) return `${DAY_NAMES[order[start]]} - ${DAY_NAMES[order[end]]}`;
+  return order.filter((x) => d.includes(x)).map((x) => DAY_NAMES[x]).join(', ');
+}
+/** Number shown inside a habit ring: hours with one decimal for long goals, otherwise minutes or a count. */
+export function ringNumber(hb, v) {
+  if (hb.goal_type === 'time') {
+    return hb.target >= 3600 ? String(+(v / 3600).toFixed(1)) : String(Math.floor(v / 60));
+  }
+  return String(Math.floor(v));
 }

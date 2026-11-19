@@ -53,9 +53,10 @@ for (const key of ['o', 'f']) {
 }
 
 // Icons used by the app chrome itself are inlined so they render instantly.
-const UI = ['home','clipboard-data','settings','plus','x','flame','check','minus','player-play','player-pause',
-  'chevron-right','chevron-left','camera','users','user-plus','logout','copy','trash','pencil','search',
-  'user','circle-check','refresh','alert-circle','share','bolt'];
+const UI = ['home-2','article','messages','user-circle','layout-dashboard','pennant','plus','minus','check','chevron-left','chevron-right',
+  'x','search','pencil','flame','bolt','trash','copy','camera','users','user-plus','user-minus','user-check','heart','message-circle','send',
+  'lock','world','dots','arrow-back-up','player-play','player-pause','bell','logout','refresh','shield-check','crown','circle-check',
+  'alert-circle','clock','calendar','photo','sparkles','arrow-left','door-exit','star'];
 const ui = {};
 for (const n of UI) {
   const o = shards.o[shardOf(n)]?.[n], f = shards.f[shardOf(n)]?.[n];

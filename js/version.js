@@ -1,7 +1,17 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '1.3.2';
+export const VERSION = '2.0';
 
 export const CHANGELOG = [
+  {
+    version: '2.0',
+    date: 'November 19, 2026',
+    items: [
+      'A brand-new look, built from your Figma design: new Today screen, rings, cards and bottom bar.',
+      'Reports measure your last 21 days, for all habits or one at a time, colored from red to green.',
+      'Social: friends, public and private groups with admins, invitations, posts, comments and likes.',
+      'Account: crop your photo, edit your username and About me.',
+    ],
+  },
   {
     version: '1.3.2',
     date: 'November 14, 2026',
