@@ -92,11 +92,13 @@ export function openPanel({ cls = '', onClose, tapClose = false } = {}) {
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && stack.length) stack[stack.length - 1].close(); });
 export const closeAllPanels = () => [...stack].forEach((p) => p.close());
 
-/** Top bar used by every panel: round-square back button on the left, optional title and right slot. */
+/** Top bar used by every panel: optional left item, centered title, and a round X (close) in the top-right corner. */
 export function panelBar(api, { title, right, left, back = true } = {}) {
-  return h('header', { class: 'panel-bar' },
-    left || (back ? h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Back', onClick: () => api.close() }, icon('chevron-left', { size: 30, stroke: 1.6 })) : h('span')),
-    h('h2', {}, title || ''), h('div', { class: 'bar-right' }, right));
+  // every screen closes with an X in the top-right corner; anything that used to sit there moves to the left
+  const x = back ? h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Close', onClick: () => api.close() }, icon('x', { size: 28, stroke: 1.8 })) : null;
+  const leftSlot = left || (x ? right : null) || h('span');
+  const rightSlot = x ? (left ? [right, x] : x) : right;
+  return h('header', { class: 'panel-bar' }, leftSlot, h('h2', {}, title || ''), h('div', { class: 'bar-right' }, rightSlot));
 }
 
 /** Confirmation pop-up. Resolves true when the person confirms, false on cancel / outside tap / Escape. */

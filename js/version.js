@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.6';
+export const VERSION = '2.6.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.6.1',
+    date: 'November 19, 2026',
+    items: ['Every screen now closes with an X in the top-right corner instead of a back arrow on the left.'],
+  },
   {
     version: '2.6',
     date: 'November 19, 2026',

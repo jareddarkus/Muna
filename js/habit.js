@@ -22,14 +22,13 @@ export function openHabit(id, day = state.viewDay) {
 
   const edit = h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Edit habit', onClick: () => { panel.close(); setTimeout(() => openEditor(id), 150); } }, icon('pencil', { size: 26, stroke: 1.8 }));
   const titleEl = h('span', { class: 'habit-bar-title' });
-  const closeBtn = h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Close', onClick: () => panel.close() }, icon('x', { size: 28, stroke: 1.8 }));
   const r = ring({ size: 130, stroke: 10, color: PALETTE.purple, glow: true, cls: 'hero-ring small' });
   const num = h('span', { class: 'hero-num' }, '0');
   const unit = h('span', { class: 'habit-unit' });
   const center = h('div', { class: 'hero-center col' }, num, unit);
   const controls = h('div', { class: 'habit-controls' });
 
-  panel.el.append(panelBar(panel, { left: edit, right: closeBtn, title: titleEl }),
+  panel.el.append(panelBar(panel, { left: edit, title: titleEl }),
     h('div', { class: 'panel-body center' },
       h('div', { class: 'hero compact' }, r.el, center), controls, isToday ? null : h('p', { class: 'habit-sub center' }, fmtDay(day, { weekday: 'short', day: 'numeric', month: 'short' }))));
 
