@@ -75,7 +75,7 @@ svg { display: block; flex: none; }
 .card { position: relative; display: flex; align-items: center; gap: 15px; height: 80px; padding: 10px; border-radius: 40px; background: var(--card); cursor: pointer;
   transition: transform .5s var(--ease), background .45s ease-out, box-shadow .3s; }
 .card:active { transform: scale(.98); }
-.card.enter { animation: rise .55s var(--ease) backwards; }
+.card.enter { animation: rise-move .6s var(--ease) backwards, fade .5s cubic-bezier(.45, 0, .35, 1) backwards; }
 .card.done { background: var(--c); color: #fff; }
 .card.selected { box-shadow: 0 0 0 3px var(--c); }
 .card.invited { box-shadow: 0 0 0 3px var(--purple); }
@@ -275,6 +275,7 @@ input[type="date"].pill-input::-webkit-datetime-edit-fields-wrapper, input[type=
 .toast.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; transition: transform .5s var(--ease), opacity .25s ease-out, visibility 0s; box-shadow: 0 10px 24px -10px rgba(72, 71, 85, .5); }
 
 @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+@keyframes rise-move { from { transform: translateY(14px); } }
 @keyframes fade { from { opacity: 0; } }
 @keyframes breathe { 50% { opacity: .55; transform: scale(.96); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }

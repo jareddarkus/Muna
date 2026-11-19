@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.9.1';
+export const VERSION = '2.9.2';
 
 export const CHANGELOG = [
+  {
+    version: '2.9.2',
+    date: 'November 19, 2026',
+    items: ['Smoother appearing: elements now fade in with a soft, slower curve while they rise, instead of snapping to full opacity (tabs and new cards).'],
+  },
   {
     version: '2.9.1',
     date: 'November 19, 2026',
