@@ -41,6 +41,7 @@ function loginView() {
     h('div', { class: 'login-actions' }, btn, note, h('button', { type: 'button', class: 'link', onClick: () => enterDemo() }, 'Preview without an account')));
 }
 
+let tabHandler = null;
 function shellView() {
   const names = ['home', 'reports', 'social', 'account'];
   const views = names.map((n) => h('main', { class: 'screen', id: `view-${n}`, 'aria-label': n }));
@@ -72,6 +73,9 @@ function shellView() {
     if (i === 2) social.show();
   }
   go(0);
+  if (tabHandler) window.removeEventListener('muna:tab', tabHandler);
+  tabHandler = (e) => go(e.detail);
+  window.addEventListener('muna:tab', tabHandler);
   subscribe(() => { const n = pendingCount(); badge.hidden = !n; });
   return [...views, dock];
 }

@@ -1,7 +1,16 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.1.4';
+export const VERSION = '2.2';
 
 export const CHANGELOG = [
+  {
+    version: '2.2',
+    date: 'November 19, 2026',
+    items: [
+      'Reports: the 21 dots are now a small calendar. The more of that day you did, the stronger the green. Tap a habit and the calendar turns to that habit\'s color.',
+      'Tap any day in the Reports calendar to open that day on the Today tab.',
+      'Today: tap the day title ("Today") and a calendar slides down from the top. Tap any day to jump to it.',
+    ],
+  },
   {
     version: '2.1.4',
     date: 'November 19, 2026',

@@ -3,7 +3,8 @@ import { h, tween, shortDay } from './util.js';
 import { PALETTE, hex, rateColor } from './colors.js';
 import { ring } from './ui.js';
 import { card, rateRing, habitSub, flag } from './cards.js';
-import { state, subscribe, habitList } from './store.js';
+import { state, subscribe, habitList, isScheduled, valueOf, isDone, progressOf, setViewDay } from './store.js';
+import { addDays, dow, parseDay, DAY_NAMES } from './util.js';
 import { attachHold } from './hold.js';
 import { habitItems } from './habit-actions.js';
 import { overallRate, habitRate, habitParts, pctOf, WINDOW } from './rates.js';
@@ -17,12 +18,13 @@ export function mountReports(root) {
   const unit = h('span', { class: 'hero-unit' }, '%');
   const caption = h('p', { class: 'caption' });
   const hero = h('section', { class: 'hero' }, r.el, h('div', { class: 'hero-center' }, num, unit));
-  const dots = h('div', { class: 'dots', 'aria-label': 'Last 21 days' });
+  const dots = h('div', { class: 'mini-cal', 'aria-label': 'Last 21 days' });
   const list = h('div', { class: 'cards' });
   const empty = h('p', { class: 'empty-text' }, 'No habits');
   root.append(header, hero, caption, dots, list, empty);
 
-  const rows = new Map();
+  const rows = new Map(), calCells = new Map();
+  let calKey = '';
   function render() {
     const all = habitList();
     empty.hidden = all.length > 0;
@@ -38,21 +40,33 @@ export function mountReports(root) {
     num.style.color = ''; // the number stays dark; the ring carries the color
     caption.textContent = hb ? hb.title : 'All habits';
 
-    // 21 days
-    dots.replaceChildren(...Array.from({ length: WINDOW }, (_, i) => {
-      let cls = 'dot', bg = '', label = '';
-      if (hb) {
-        const d = habitParts(hb).days[i];
-        label = shortDay(d.day);
-        if (!d.scheduled) cls += ' off'; else if (d.done) bg = hex(hb.color); else if (d.counted) cls += ' miss'; else cls += ' off';
-      } else {
-        let s = 0, dn = 0, day;
-        for (const x of all) { const d = habitParts(x).days[i]; day = d.day; if (d.counted) { s++; if (d.done) dn++; } }
-        label = shortDay(day);
-        if (!s) cls += ' off'; else bg = rateColor(pctOf(dn, s));
+    // 21-day calendar: the more of that day was done, the stronger the color. Tap a day to open it on the Today tab.
+    const tint = hb ? hex(hb.color) : PALETTE.green;
+    const start = addDays(state.today, -(WINDOW - 1));
+    if (calKey !== start) { // build the cells once per day so colors can fade smoothly between habits
+      calKey = start; calCells.clear();
+      const lead = (parseDay(start).getDay() + 6) % 7; // Monday-first columns
+      const cells = Array.from({ length: lead }, () => h('span', { class: 'mc-blank' }));
+      for (let i = 0; i < WINDOW; i++) {
+        const day = addDays(start, i);
+        const b = h('button', { type: 'button', class: 'mc-day', onClick: () => { setViewDay(day); window.dispatchEvent(new CustomEvent('muna:tab', { detail: 0 })); } }, h('span', {}, String(parseDay(day).getDate())));
+        calCells.set(day, b); cells.push(b);
       }
-      return h('span', { class: cls, title: label, style: bg ? { background: bg } : {} });
-    }));
+      dots.replaceChildren(...cells);
+    }
+    for (const [day, b] of calCells) {
+      let p = null; // 0..1 of that day done, null when nothing was scheduled
+      if (hb) { if (isScheduled(hb, day)) p = isDone(hb, valueOf(hb.id, day)) ? 1 : progressOf(hb, valueOf(hb.id, day)); }
+      else {
+        const sch = all.filter((x) => isScheduled(x, day));
+        if (sch.length) p = sch.filter((x) => isDone(x, valueOf(x.id, day))).length / sch.length;
+      }
+      const o = p ? 0.2 + 0.8 * p : 0;
+      b.style.setProperty('--c', tint); b.style.setProperty('--o', String(o));
+      b.classList.toggle('off', p == null); b.classList.toggle('miss', p === 0);
+      b.classList.toggle('strong', o > 0.55); b.classList.toggle('today', day === state.today);
+      b.setAttribute('aria-label', `${DAY_NAMES[dow(day)]} ${shortDay(day)}${p == null ? '' : `, ${Math.round(p * 100)}% done`}`);
+    }
 
     // habit cards
     for (const [id, c] of rows) if (!state.habits.has(id)) { c.el.remove(); rows.delete(id); }
