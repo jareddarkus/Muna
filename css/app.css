@@ -280,3 +280,35 @@ input[type="date"]::-webkit-date-and-time-value, input[type="time"]::-webkit-dat
 .dialog-actions .pill { height: 50px; padding: 0 10px; font-size: 16px; }
 .pill.danger-solid { background: var(--red); color: #fff; }
 .dialog-wrap.open .backdrop { opacity: 1; } .dialog-wrap.closing .backdrop { opacity: 0; transition-duration: .2s; }
+
+/* ───────── press and hold ───────── */
+.holdable { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.hold-wrap { position: fixed; inset: 0; z-index: 70; pointer-events: none; }
+.hold-overlay { position: absolute; inset: 0; background: rgba(246, 245, 248, 0); -webkit-backdrop-filter: blur(0px); backdrop-filter: blur(0px);
+  transition: background .35s ease-out, -webkit-backdrop-filter .35s ease-out, backdrop-filter .35s ease-out; }
+.hold-overlay.on { background: rgba(246, 245, 248, .55); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.hold-clone { position: fixed; pointer-events: none; transform-origin: center; transition: transform .38s var(--ease), box-shadow .38s var(--ease); animation: none !important; }
+.hold-clone.lifted { transform: scale(1.04); box-shadow: 0 20px 44px -14px rgba(72, 71, 85, .4); }
+.hold-clone.comment, .hold-clone.post-row { background: #fff; border-radius: 24px; padding: 12px; }
+.hold-menu { position: fixed; width: 236px; padding: 8px; background: #fff; border-radius: 28px; display: grid; gap: 2px; pointer-events: auto;
+  box-shadow: 0 0 33px rgba(127, 178, 255, .4), 0 12px 30px -12px rgba(72, 71, 85, .3); opacity: 0; transform: scale(.9); transition: transform .38s var(--ease), opacity .22s ease-out; }
+.hold-menu.on { opacity: 1; transform: none; }
+.hold-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; height: 52px; padding: 0 18px; border-radius: 22px; color: var(--black); font-size: 16px; text-align: left; transition: background .2s; }
+.hold-item:active { background: var(--lgray); }
+.hold-item svg { color: var(--dgray); } .hold-item.danger, .hold-item.danger svg { color: var(--red); }
+
+/* ───────── log screen: a sheet no taller than 60% of the screen ───────── */
+.panel.habit-panel { height: auto; max-height: 60dvh; max-height: 60vh; }
+@supports (height: 1dvh) { .panel.habit-panel { max-height: 60dvh; } }
+.habit-panel .panel-bar { height: 70px; padding-top: 20px; }
+.habit-panel .panel-body { padding-top: 0; gap: 14px; }
+.habit-head { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; }
+.habit-head-text { min-width: 0; display: grid; }
+.habit-head .habit-title { font-size: 20px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.habit-panel .hero.compact { width: 130px; height: 130px; margin: 4px auto 0; }
+.habit-panel .hero.compact .hero-num { font-size: 32px; } .habit-panel .hero.compact .hero-num.small { font-size: 26px; }
+.habit-panel .hero.compact .habit-unit { font-size: 13px; }
+.habit-panel .habit-controls { min-height: 70px; gap: 20px; } .habit-panel .big-btn { width: 70px; height: 70px; } .habit-panel .big-btn.side { width: 56px; height: 56px; }
+.habit-panel .stat-row { margin: 0; gap: 8px; } .habit-panel .stat-pill { padding: 8px 14px; font-size: 13px; }
+.picker-habit.short.panel, .panel.short { height: auto; max-height: 60dvh; }
+.habit-head { margin-top: 12px; }

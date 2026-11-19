@@ -104,6 +104,11 @@ export const remote = {
     return publicUrl;
   },
 
+  async removeAvatarFile(url, userId) {
+    const marker = '/avatars/';
+    if (url?.includes(`${marker}${userId}/`)) await sb.storage.from('avatars').remove([url.split(marker)[1]]);
+  },
+
   async createGroup(f) { return check(await sb.from('groups').insert({ name: f.name, description: f.description || '', icon: f.icon, color: f.color, is_public: f.is_public }).select().single()); },
   async updateGroup(id, patch) { check(await sb.from('groups').update(patch).eq('id', id)); },
   async deleteGroup(id) { check(await sb.from('groups').delete().eq('id', id)); },

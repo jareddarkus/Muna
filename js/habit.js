@@ -20,17 +20,18 @@ export function openHabit(id, day = state.viewDay) {
   const circleHost = h('div', { class: 'habit-circle-host' });
   const title = h('h1', { class: 'habit-title' });
   const sub = h('p', { class: 'habit-sub' });
-  const dayPill = h('p', { class: 'day-pill', hidden: isToday }, fmtDay(day, { weekday: 'long', day: 'numeric', month: 'short' }));
-  const r = ring({ size: 159, stroke: 12, color: PALETTE.purple, glow: true, cls: 'hero-ring' });
+  const r = ring({ size: 130, stroke: 10, color: PALETTE.purple, glow: true, cls: 'hero-ring small' });
   const num = h('span', { class: 'hero-num' }, '0');
   const unit = h('span', { class: 'habit-unit' });
-  const status = h('span', { class: 'habit-status' });
   const center = h('div', { class: 'hero-center col' }, num, unit);
   const controls = h('div', { class: 'habit-controls' });
   const rateEl = h('span', { class: 'stat-pill' }), streakEl = h('span', { class: 'stat-pill' });
+  const dayPill = { hidden: isToday, textContent: '' };
 
   panel.el.append(panelBar(panel, { right: edit }),
-    h('div', { class: 'panel-body center' }, circleHost, title, sub, dayPill, h('div', { class: 'hero' }, r.el, center), status, controls, h('div', { class: 'stat-row' }, rateEl, streakEl)));
+    h('div', { class: 'panel-body center' },
+      h('div', { class: 'habit-head' }, circleHost, h('div', { class: 'habit-head-text' }, title, sub)),
+      h('div', { class: 'hero compact' }, r.el, center), controls, h('div', { class: 'stat-row' }, rateEl, streakEl)));
 
   let built = null, shownIcon = null;
   const round = (cls, label, ic, fn) => h('button', { type: 'button', class: `big-btn ${cls}`, 'aria-label': label, onClick: () => { tap(); fn(); } }, ic);
@@ -53,18 +54,18 @@ export function openHabit(id, day = state.viewDay) {
     if (!hb) { panel.close(); return; }
     const color = hex(hb.color), time = hb.goal_type === 'time';
     panel.el.style.setProperty('--c', color);
-    if (shownIcon !== hb.icon + hb.color) { shownIcon = hb.icon + hb.color; circleHost.replaceChildren(iconCircle(hb.icon, color, 100, 56)); }
+    if (shownIcon !== hb.icon + hb.color) { shownIcon = hb.icon + hb.color; circleHost.replaceChildren(iconCircle(hb.icon, color, 56, 32)); }
     title.textContent = hb.title;
-    sub.replaceChildren(flag(), ` ${habitSub(hb)}`);
+    sub.replaceChildren(flag(), ` ${habitSub(hb)}${isToday ? '' : ` • ${fmtDay(day, { day: 'numeric', month: 'short' })}`}`);
     const running = isToday && isRunning(id);
     const v = time && isToday ? liveValue(id) : valueOf(id, day);
     const done = isDone(hb, v);
     build(hb);
     r.color(color); r.set(done ? 1 : progressOf(hb, v));
-    if (time) { num._v = undefined; num.textContent = fmtClock(v); unit.textContent = `of ${goalLabel(hb)}`; }
-    else { tween(num, Math.floor(v)); unit.textContent = hb.target === 1 && !hb.unit ? '' : `of ${hb.target}${hb.unit ? ` ${hb.unit}` : ''}`; }
+    const note = future ? 'Not yet' : done ? 'Goal reached' : running ? 'Running…' : '';
+    if (time) { num._v = undefined; num.textContent = fmtClock(v); unit.textContent = note || `of ${goalLabel(hb)}`; }
+    else { tween(num, Math.floor(v)); unit.textContent = note || (hb.target === 1 && !hb.unit ? '' : `of ${hb.target}${hb.unit ? ` ${hb.unit}` : ''}`); }
     num.classList.toggle('small', time);
-    status.textContent = future ? 'Come back on this day' : done ? 'Goal reached' : running ? 'Running…' : '';
     panel.el.classList.toggle('running', running);
     panel.el.classList.toggle('done', done);
     const pct = habitRate(hb);

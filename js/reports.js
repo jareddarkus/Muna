@@ -4,6 +4,8 @@ import { PALETTE, hex, rateColor } from './colors.js';
 import { ring } from './ui.js';
 import { card, rateRing, habitSub, flag } from './cards.js';
 import { state, subscribe, habitList, streakOf, bestStreakOf } from './store.js';
+import { attachHold } from './hold.js';
+import { habitItems } from './habit-actions.js';
 import { overallRate, habitRate, habitParts, pctOf, WINDOW } from './rates.js';
 
 export function mountReports(root) {
@@ -62,7 +64,9 @@ export function mountReports(root) {
     for (const [id, c] of rows) if (!state.habits.has(id)) { c.el.remove(); rows.delete(id); }
     const els = all.map((x) => {
       let c = rows.get(x.id);
-      if (!c) { c = card({ onClick: () => { filter = filter === x.id ? null : x.id; render(); window.scrollTo?.(0, 0); root.scrollTo?.({ top: 0, behavior: 'smooth' }); } }); c.rr = rateRing(); c.slot.append(c.rr.el); rows.set(x.id, c); }
+      if (!c) { c = card({ onClick: () => { filter = filter === x.id ? null : x.id; render(); window.scrollTo?.(0, 0); root.scrollTo?.({ top: 0, behavior: 'smooth' }); } }); c.rr = rateRing(); c.slot.append(c.rr.el); c.hb = x; rows.set(x.id, c);
+        attachHold(c.el, () => habitItems(c.hb, { day: state.today, extra: [{ label: filter === c.hb.id ? 'Show all habits' : 'Show only this', icon: 'filter', onSelect: () => { filter = filter === c.hb.id ? null : c.hb.id; render(); } }] })); }
+      c.hb = x;
       c.set({ color: hex(x.color), icon: x.icon, name: x.title, sub: habitSub(x), done: false });
       c.el.classList.toggle('selected', filter === x.id);
       c.rr.set(habitRate(x));

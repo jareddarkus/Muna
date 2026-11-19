@@ -5,7 +5,8 @@ import { PALETTE, COLORS, COLOR_NAMES, hex, rateColor } from './colors.js';
 import { avatar, segmented, openPanel, panelBar, dangerButton, toggleSwitch, iconCircle, closeAllPanels, confirmDialog } from './ui.js';
 import { card, rateRing, habitSub, flag } from './cards.js';
 import { openIconPicker } from './editor.js';
-import { openProfile } from './profile.js';
+import { openProfile, personItems } from './profile.js';
+import { attachHold } from './hold.js';
 import {
   state, subscribe, bus, isMember, isAdmin, membersOf, profileOf, loadGroup, groupOverview, joinGroup, requestJoin, leaveGroup, deleteGroup, updateGroup,
   respondRequest, respondInvite, inviteUser, searchUsers, listPosts, createPost, deletePost, togglePostLike, listComments, addComment, deleteComment, toggleCommentLike,
@@ -71,6 +72,7 @@ export function openGroup(gid) {
         c.set({ color: hex('purple'), icon: null, name: `@${p.username}${m.user_id === state.me.id ? ' (you)' : ''}`, sub: m.role === 'admin' ? 'Admin' : 'Member', done: false, showFlag: false });
         c.circle.replaceChildren(avatar(p, 60)); c.el.classList.add('person');
         const rr = rateRing(); rr.set(m.pct); c.slot.append(rr.el);
+        attachHold(c.el, () => personItems(m.user_id, { groupId: gid }));
         return c.el;
       });
       content.replaceChildren(h('div', { class: 'cards' }, rows), h('div', { class: 'leave' }, dangerButton('Leave group', 'You will stop seeing its posts and members. You can join again later if it is public.', async () => { await leaveGroup(gid).catch(fail); panel.close(); }, 'block', 'Leave')));
@@ -106,12 +108,19 @@ export function openGroup(gid) {
     } }, icon('heart', { size: 30, stroke: 1.8, filled: liked }), String(p.likes.length || ''));
     const comment = h('button', { type: 'button', class: 'act', 'aria-label': 'Comments', onClick: () => openComments(p, gid) }, icon('message-circle', { size: 30, stroke: 1.8 }), String(p.comment_count || ''));
     const canDelete = p.author_id === state.me.id || isAdmin(gid);
-    return h('article', { class: 'post' },
+    const art = h('article', { class: 'post' },
       h('header', {}, h('button', { type: 'button', class: 'post-author', onClick: () => openProfile(p.author_id, { groupId: gid }) }, avatar(author, 44), h('span', {}, h('b', {}, `@${author.username}`), h('i', {}, timeAgo(p.created_at)))),
         canDelete ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Delete post', onClick: async () => { if (!(await confirmDialog({ title: 'Delete this post?', message: 'Its comments and likes will be removed too.' }))) return; try { await deletePost(p.id); posts = posts.filter((x) => x.id !== p.id); paintContent(); } catch (e) { fail(e); } } }, icon('trash', { size: 28, stroke: 1.8 })) : null),
       p.body ? h('p', { class: 'post-body' }, p.body) : null,
       p.habit ? habitAttachment(p) : null,
       h('footer', {}, likeBtn, comment));
+    attachHold(art, () => [
+      { label: liked ? 'Unlike' : 'Like', icon: 'heart', onSelect: () => likeBtn.click() },
+      { label: 'Comments', icon: 'message-circle', onSelect: () => comment.click() },
+      p.habit && p.author_id !== state.me.id ? { label: 'Copy habit', icon: 'copy', onSelect: () => art.querySelector('.shared-habit .pill')?.click() } : null,
+      canDelete ? { label: 'Delete', icon: 'trash', danger: true, onSelect: () => art.querySelector('.icon-btn')?.click() } : null,
+    ]);
+    return art;
   }
   function habitAttachment(p) {
     const hb = p.habit, rr = rateRing(); rr.set(p.pct);
@@ -172,10 +181,18 @@ function openComments(post, gid) {
       try { await toggleCommentLike(c.id, next); } catch (e) { fail(e); load(); }
     } }, icon('heart', { size: 26, stroke: 1.8, filled: liked }), String(likes.length || ''));
     const canDelete = c.author_id === state.me.id || isAdmin(gid);
-    return h('div', { class: `comment ${reply ? 'reply' : ''}` }, avatar(author, reply ? 32 : 40),
+    let delBtn = null;
+    const replyBtn = h('button', { type: 'button', onClick: () => setReply(c) }, 'Reply');
+    const row = h('div', { class: `comment ${reply ? 'reply' : ''}` }, avatar(author, reply ? 32 : 40),
       h('div', { class: 'comment-main' }, h('p', {}, h('b', {}, `@${author.username}`), ' ', c.body),
-        h('div', { class: 'comment-meta' }, h('i', {}, timeAgo(c.created_at)), h('button', { type: 'button', onClick: () => setReply(c) }, 'Reply'),
-          canDelete ? h('button', { type: 'button', onClick: async () => { if (!(await confirmDialog({ title: 'Delete this comment?', message: reply ? '' : 'Replies to it will be removed too.' }))) return; try { await deleteComment(c.id); post.comment_count = Math.max(0, (post.comment_count || 1) - 1); await load(); } catch (e) { fail(e); } } }, 'Delete') : null)), like);
+        h('div', { class: 'comment-meta' }, h('i', {}, timeAgo(c.created_at)), replyBtn,
+          canDelete ? (delBtn = h('button', { type: 'button', onClick: async () => { if (!(await confirmDialog({ title: 'Delete this comment?', message: reply ? '' : 'Replies to it will be removed too.' }))) return; try { await deleteComment(c.id); post.comment_count = Math.max(0, (post.comment_count || 1) - 1); await load(); } catch (e) { fail(e); } } }, 'Delete')) : null)), like);
+    attachHold(row, () => [
+      { label: 'Reply', icon: 'arrow-back-up', onSelect: () => setReply(c) },
+      { label: liked ? 'Unlike' : 'Like', icon: 'heart', onSelect: () => like.click() },
+      canDelete ? { label: 'Delete', icon: 'trash', danger: true, onSelect: () => delBtn.click() } : null,
+    ]);
+    return row;
   }
   function paint() {
     const top = data.comments.filter((c) => !c.parent_id);
@@ -186,7 +203,7 @@ function openComments(post, gid) {
 }
 
 // ───────────── admin tools ─────────────
-function openGroupAdmin(gid) {
+export function openGroupAdmin(gid) {
   let unsub = () => {};
   const panel = openPanel({ cls: 'editor', onClose: () => unsub() });
   const g = state.groups.get(gid);
@@ -248,4 +265,22 @@ function openGroupAdmin(gid) {
     save, reqTitle, reqList,
     h('h3', { class: 'list-title' }, 'Invite'), invInput, invList, del, h('div', { class: 'spacer' })));
   paintIcon(); paintReqs();
+}
+
+
+/** Press-and-hold menu for a group card. */
+export function groupItems(g) {
+  const member = isMember(g.id), admin = isAdmin(g.id);
+  const invited = state.invites.find((i) => i.group_id === g.id);
+  const requested = state.requests.some((r) => r.group_id === g.id && r.user_id === state.me.id);
+  return [
+    { label: 'Open', icon: 'eye', onSelect: () => openGroup(g.id) },
+    admin ? { label: 'Manage', icon: 'settings', onSelect: () => openGroupAdmin(g.id) } : null,
+    !member && invited ? { label: 'Accept invitation', icon: 'circle-check', onSelect: () => respondInvite(invited.id, true).catch(fail) } : null,
+    !member && !invited && g.is_public ? { label: 'Join group', icon: 'user-plus', onSelect: () => joinGroup(g.id).catch(fail) } : null,
+    !member && !invited && !g.is_public && !requested ? { label: 'Request to join', icon: 'user-plus', onSelect: () => requestJoin(g.id).then(() => toast('Request sent')).catch(fail) } : null,
+    member ? { label: 'Leave group', icon: 'door-exit', danger: true, onSelect: async () => {
+      if (await confirmDialog({ title: 'Leave group?', message: 'You will stop seeing its posts and members.', confirm: 'Leave' })) leaveGroup(g.id).catch(fail);
+    } } : null,
+  ];
 }

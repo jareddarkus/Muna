@@ -311,6 +311,12 @@ export async function setAvatar(blob) {
   await updateProfile({ avatar_url: url });
 }
 
+export async function removeAvatar() {
+  const url = state.me.avatar_url;
+  await updateProfile({ avatar_url: null });
+  try { await backend.removeAvatarFile?.(url, state.me.id); } catch {}
+}
+
 // ── social ──
 async function socialRefresh() { const soc = await backend.loadSocial(state.me.id); applySocial(soc); await ensureProfiles(socialUserIds(soc)); emit(); }
 export const refreshSocialNow = socialRefresh;
