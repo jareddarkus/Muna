@@ -1,5 +1,5 @@
 // The 21-day completion rate. Must stay identical to the database functions (rate_parts / pct_of / avg_pct).
-import { state, habitList, valueOf, isDone, taskList } from './store.js';
+import { state, habitList, valueOf, isDone, taskList, tasksOn } from './store.js';
 import { addDays, dow } from './util.js';
 
 export const WINDOW = 21;
@@ -60,6 +60,6 @@ export function todayProgress(day = state.viewDay) {
 /** Today screen for tasks: how many of that day's tasks are done. */
 export function taskDayProgress(day = state.taskDay) {
   let n = 0, done = 0;
-  for (const t of taskList()) if (t.day === day) { n++; if (t.done_at) done++; }
+  for (const t of tasksOn(day)) { n++; if (t.done_at) done++; }
   return { n, done, pct: pctOf(done, n) ?? 0 };
 }
