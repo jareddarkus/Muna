@@ -1,7 +1,15 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.7.1';
+export const VERSION = '2.8';
 
 export const CHANGELOG = [
+  {
+    version: '2.8',
+    date: 'November 19, 2026',
+    items: [
+      'Progress ring: tap it to add 1 (or 1 minute for timed habits). Press and hold it and the circle fills up; when it reaches 100% the habit or task is completed. Let go early and it springs back.',
+      'New tab transition: the old tab disappears at once and the new one builds itself, top to bottom and left to right, each element rising up into place.',
+    ],
+  },
   {
     version: '2.7.1',
     date: 'November 19, 2026',

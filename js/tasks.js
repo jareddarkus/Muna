@@ -11,6 +11,7 @@ import { createCalendar } from './calendar.js';
 import { openTask } from './task-sheet.js';
 import { openTaskEditor } from './task-editor.js';
 import { taskItems } from './task-actions.js';
+import { attachRingActions } from './ring-actions.js';
 
 export function mountTasks(root) {
   const cal = createCalendar({ getDay: () => state.taskDay, onPick: (d) => { setTaskDay(d); cal.close(); } });
@@ -35,10 +36,17 @@ export function mountTasks(root) {
   const cards = new Map();
   function make(t) {
     const c = card({ onClick: () => openTask(comp.t.id) });
-    const tr = taskRing(() => { const cur = state.tasks.get(comp.t.id); if (cur) setTaskDone(cur, !isTaskDone(cur)).catch(() => {}); });
+    const tr = taskRing();
     c.slot.append(tr.el);
     const comp = { ...c, tr, t };
     attachHold(c.el, () => taskItems(comp.t));
+    const cur = () => state.tasks.get(comp.t.id);
+    // tap the ring: tick / untick; hold it: the circle fills and the task is completed at 100%
+    attachRingActions(tr.el, { ring: tr.ring, state: tr,
+      getProgress: () => { const x = cur(); return !x ? 0 : isTaskDone(x) ? 1 : stepCount(x.id).n ? taskProgress(x.id) : 0; },
+      isDone: () => { const x = cur(); return !x || isTaskDone(x); },
+      onTap: () => { const x = cur(); if (x) setTaskDone(x, !isTaskDone(x)).catch(() => {}); },
+      onComplete: () => { const x = cur(); if (x) setTaskDone(x, true).catch(() => {}); } });
     return comp;
   }
 

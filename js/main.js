@@ -68,6 +68,18 @@ function shellView() {
   const dot = h('span', { class: 'tab-dot' });
   const dock = h('nav', { class: 'dock' }, ...buttons, dot);
   let cur = -1;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  // The new screen builds itself top to bottom, left to right: each element rises from below and fades in, one after another.
+  function playEnter(view) {
+    if (reduce.matches || !view.animate) return;
+    const kids = [];
+    for (const c of view.children) {
+      if (c.hidden || !c.offsetHeight) continue;
+      if (c.matches('.top-bar, .cards, .rep-icons, .mini-cal, .profile-actions, .seg-wrap')) kids.push(...[...c.children].filter((x) => !x.hidden).slice(0, 30)); else kids.push(c);
+    }
+    kids.forEach((el, k) => el.animate([{ opacity: 0, transform: 'translateY(22px)' }, { opacity: 1, transform: 'translateY(0)' }],
+      { duration: 380, delay: Math.min(k * 34, 380), easing: 'cubic-bezier(.16, .84, .3, 1)', fill: 'backwards' }));
+  }
   function go(i) {
     if (cur >= 0 && i !== cur) tap();
     if (i === cur) { views[i].scrollTo({ top: 0, behavior: 'smooth' }); return; }
@@ -78,6 +90,7 @@ function shellView() {
     dock.style.setProperty('--i', i);
     if (i === 2) reports.show();
     if (i === 3) social.show();
+    playEnter(views[i]);
   }
   go(0);
   if (tabHandler) window.removeEventListener('muna:tab', tabHandler);
