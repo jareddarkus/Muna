@@ -16,14 +16,13 @@ export function openTask(id) {
   panel.el.style.setProperty('--c', TASK_COLOR);
 
   const edit = h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Edit', onClick: () => { panel.close(); setTimeout(() => openTaskEditor({ id }), 150); } }, icon('pencil', { size: 26, stroke: 1.8 }));
-  const closeBtn = h('button', { type: 'button', class: 'sq-btn', 'aria-label': 'Close', onClick: () => panel.close() }, icon('x', { size: 28, stroke: 1.8 }));
   const titleEl = h('span', { class: 'habit-bar-title' });
   const path = h('p', { class: 'habit-sub center' });
   const about = h('p', { class: 'task-about' });
   const steps = h('div', { class: 'step-list' });
   const addStep = h('button', { type: 'button', class: 'pill small light', onClick: () => openTaskEditor({ parentId: id }) }, icon('plus', { size: 22, stroke: 2 }), 'Add step');
   const complete = h('button', { type: 'button', class: 'big-btn main', 'aria-label': 'Complete or reset', onClick: () => { tap(); const t = state.tasks.get(id); if (t) setTaskDone(t, !isTaskDone(t)); } }, icon('check', { size: 37.4, stroke: 3.86 }));
-  panel.el.append(panelBar(panel, { left: edit, right: closeBtn, title: titleEl }),
+  panel.el.append(panelBar(panel, { left: edit, title: titleEl }),
     h('div', { class: 'panel-body center' }, path, about, steps, addStep, h('div', { class: 'habit-controls' }, complete)));
 
   const rows = new Map();
