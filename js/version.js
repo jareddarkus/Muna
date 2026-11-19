@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.8';
+export const VERSION = '2.8.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.8.1',
+    date: 'November 19, 2026',
+    items: ['The big circle on the habit screen works like the ring on the Today card: tap it to add 1 (or 1 minute), press and hold to fill it and complete the habit.'],
+  },
   {
     version: '2.8',
     date: 'November 19, 2026',

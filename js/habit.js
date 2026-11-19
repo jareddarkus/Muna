@@ -6,6 +6,7 @@ import { ring, openPanel, panelBar } from './ui.js';
 import { state, subscribe, valueOf, progressOf, isDone, bump, setValue } from './store.js';
 import { liveValue, isRunning, toggle, onTick } from './timer.js';
 import { openEditor } from './editor.js';
+import { attachRingActions } from './ring-actions.js';
 
 /** Minutes added or removed by the − / + buttons: small for short goals, bigger for long ones. */
 function stepFor(hb) {
@@ -27,10 +28,19 @@ export function openHabit(id, day = state.viewDay) {
   const unit = h('span', { class: 'habit-unit' });
   const center = h('div', { class: 'hero-center col' }, num, unit);
   const controls = h('div', { class: 'habit-controls' });
+  // the big circle does what the ring on the Today card does: tap = +1 (or +1 minute), hold = fill it up and complete
+  const heroBtn = h('div', { class: 'hero compact', role: 'button', tabindex: 0, 'aria-label': 'Add one, or hold to complete' }, r.el, center);
+  const ringState = { filling: false };
+  const curValue = () => { const hb = state.habits.get(id); return !hb ? 0 : hb.goal_type === 'time' && isToday ? liveValue(id) : valueOf(id, day); };
+  attachRingActions(heroBtn, { ring: r, state: ringState,
+    getProgress: () => { const hb = state.habits.get(id); return !hb ? 0 : isDone(hb, curValue()) ? 1 : progressOf(hb, curValue()); },
+    isDone: () => { const hb = state.habits.get(id); return !hb || future || isDone(hb, curValue()); },
+    onTap: () => { const hb = state.habits.get(id); if (hb && !future) bump(hb, hb.goal_type === 'time' ? 60 : 1, day); },
+    onComplete: () => { const hb = state.habits.get(id); if (hb) setValue(hb, hb.target, day); } });
 
   panel.el.append(panelBar(panel, { left: edit, title: titleEl }),
     h('div', { class: 'panel-body center' },
-      h('div', { class: 'hero compact' }, r.el, center), controls, isToday ? null : h('p', { class: 'habit-sub center' }, fmtDay(day, { weekday: 'short', day: 'numeric', month: 'short' }))));
+      heroBtn, controls, isToday ? null : h('p', { class: 'habit-sub center' }, fmtDay(day, { weekday: 'short', day: 'numeric', month: 'short' }))));
 
   let built = null;
   const round = (cls, label, ic, fn) => h('button', { type: 'button', class: `big-btn ${cls}`, 'aria-label': label, onClick: () => { tap(); fn(); } }, ic);
@@ -58,7 +68,7 @@ export function openHabit(id, day = state.viewDay) {
     const v = time && isToday ? liveValue(id) : valueOf(id, day);
     const done = isDone(hb, v);
     build(hb);
-    r.color(color); r.set(done ? 1 : progressOf(hb, v));
+    r.color(color); if (!ringState.filling) r.set(done ? 1 : progressOf(hb, v));
     const note = future ? 'Not yet' : done ? 'Goal reached' : running ? 'Running…' : '';
     if (time) { num._v = undefined; num.textContent = fmtClock(v); unit.textContent = note || `of ${goalLabel(hb)}`; }
     else { tween(num, Math.floor(v)); unit.textContent = note || (hb.target === 1 && !hb.unit ? '' : `of ${hb.target}${hb.unit ? ` ${hb.unit}` : ''}`); }
