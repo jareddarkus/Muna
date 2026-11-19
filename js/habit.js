@@ -67,6 +67,8 @@ export function openHabit(id, day = state.viewDay) {
     panel.el.classList.toggle('running', running);
     panel.el.classList.toggle('done', done);
   }
+  // Tap anywhere that isn't a button closes the sheet (easier than reaching for the X).
+  panel.el.addEventListener('click', (e) => { if (!e.target.closest('button, a, input, select, textarea')) panel.close(); });
   unsub = subscribe(update);
   unTick = onTick(update);
   update();

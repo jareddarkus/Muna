@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.1.3';
+export const VERSION = '2.1.4';
 
 export const CHANGELOG = [
+  {
+    version: '2.1.4',
+    date: 'November 19, 2026',
+    items: ['Habit screen: tap anywhere that is not a button to close it.'],
+  },
   {
     version: '2.1.3',
     date: 'November 19, 2026',
