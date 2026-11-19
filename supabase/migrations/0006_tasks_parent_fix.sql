@@ -6,9 +6,7 @@ as $$ select exists (select 1 from public.tasks t where t.id = pid and t.owner_i
 revoke execute on function public.owns_task(uuid) from public, anon;
 grant execute on function public.owns_task(uuid) to authenticated;
 
-drop policy tasks_insert on public.tasks;
-drop policy tasks_update on public.tasks;
-create policy tasks_insert on public.tasks for insert to authenticated
+alter policy tasks_insert on public.tasks
   with check (owner_id = auth.uid() and (parent_id is null or public.owns_task(parent_id)));
-create policy tasks_update on public.tasks for update to authenticated using (owner_id = auth.uid())
+alter policy tasks_update on public.tasks
   with check (owner_id = auth.uid() and (parent_id is null or public.owns_task(parent_id)));

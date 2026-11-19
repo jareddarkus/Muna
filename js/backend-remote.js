@@ -72,7 +72,18 @@ export const remote = {
 
   async saveHabit(row) { check(await sb.from('habits').upsert(row)); },
   async deleteHabit(id) { check(await sb.from('habits').delete().eq('id', id)); },
-  async saveTasks(rows) { check(await sb.from('tasks').upsert(rows)); },
+  /** Saves tasks parents-first, one level at a time (the database checks each parent before its children arrive). */
+  async saveTasks(rows) {
+    const ids = new Set(rows.map((r) => r.id)), done = new Set();
+    let left = rows;
+    while (left.length) {
+      const level = left.filter((r) => !r.parent_id || !ids.has(r.parent_id) || done.has(r.parent_id));
+      if (!level.length) throw new Error('Task steps are out of order.');
+      check(await sb.from('tasks').upsert(level));
+      level.forEach((r) => done.add(r.id));
+      left = left.filter((r) => !done.has(r.id));
+    }
+  },
   async deleteTask(id) { check(await sb.from('tasks').delete().eq('id', id)); },
   async saveLog(row) { check(await sb.from('habit_logs').upsert(row)); },
 
