@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.12.3';
+export const VERSION = '2.12.4';
 
 export const CHANGELOG = [
+  {
+    version: '2.12.4',
+    date: 'November 20, 2026',
+    items: ['Fixed: a long username made the group Members screen wider than the phone, so everything looked zoomed in and cut off. Long names now get cut with "…" instead.'],
+  },
   {
     version: '2.12.3',
     date: 'November 20, 2026',
