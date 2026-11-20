@@ -63,7 +63,7 @@ export function mountTasks(root) {
     next.disabled = day >= addDays(state.today, MAX_AHEAD);
 
     const t = taskDayProgress(day);
-    r.set(t.n ? t.done / t.n : 0);
+    r.set(t.frac);
     tween(num, t.pct);
 
     const before = new Map([...cards].map(([id, c]) => [id, c.el.getBoundingClientRect().top]));
