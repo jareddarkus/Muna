@@ -1,5 +1,5 @@
 // Today: header with day arrows, the big ring (today only), pending habits, a divider, then completed habits in their own color.
-import { h, tween, fmtDay, shortDay, addDays, scheduleLabel } from './util.js';
+import { h, tween, fmtDay, shortDay, addDays, scheduleLabel, tapAmount } from './util.js';
 import { icon } from './icons.js';
 import { PALETTE, hex } from './colors.js';
 import { ring } from './ui.js';
@@ -49,7 +49,7 @@ export function mountHome(root) {
     const ok = () => day() <= state.today; // nothing can be logged in the future
     attachRingActions(rb.el, { ring: rb.ring, state: rb,
       getProgress: () => (isDone(comp.hb, cur()) ? 1 : progressOf(comp.hb, cur())), isDone: () => !ok() || isDone(comp.hb, cur()),
-      onTap: () => { if (ok()) bump(comp.hb, comp.hb.goal_type === 'time' ? 60 : 1, day()); },
+      onTap: () => { if (ok()) bump(comp.hb, tapAmount(comp.hb), day()); },
       onComplete: () => setValue(comp.hb, comp.hb.target, day()) });
     return comp;
   }
