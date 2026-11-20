@@ -30,11 +30,16 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
     h('button', { type: 'button', class: `swatch ${k === draft.color ? 'on' : ''}`, 'data-k': k, role: 'radio', 'aria-label': COLOR_NAMES[k], style: { background: PALETTE[k] },
       onClick: () => { draft.color = k; paintColor(); swatches.querySelectorAll('.swatch').forEach((b) => b.classList.toggle('on', b.dataset.k === k)); } })));
 
-  // day: always for a task, optional for a step
+  // day: optional for every task and step
   const dayInput = h('input', { class: 'pill-input date-input', type: 'date', value: draft.day || state.taskDay, 'aria-label': 'Day', onChange: (e) => { if (e.target.value) draft.day = e.target.value; } });
   const dayOn = toggleSwitch(!!draft.day, (on, api) => { api.set(on); draft.day = on ? dayInput.value || state.taskDay : null; paintDay(); });
   const dayHead = h('div', { class: 'row-between' }, h('h3', {}, 'Day'), dayOn.el);
-  function paintDay() { dayHead.querySelector('.switch').hidden = !isStep(); dayInput.hidden = isStep() && !draft.day; if (!isStep() && !draft.day) draft.day = state.taskDay; }
+  const dayHint = h('p', { class: 'hint' });
+  function paintDay() {
+    dayInput.hidden = !draft.day; dayOn.set(!!draft.day);
+    dayHint.hidden = !!draft.day;
+    dayHint.textContent = isStep() ? 'No day: it just lives inside its task.' : 'No day: it shows on Today every day, under Carried over, until you finish it.';
+  }
 
   // parent
   const parentLabel = h('span', {});
@@ -73,7 +78,7 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
   unsub = subscribe(() => { if (savedId && !state.tasks.has(savedId)) { panel.close(); return; } paintSteps(); });
 
   async function persist() {
-    const row = { id: savedId || undefined, title: draft.title.trim(), icon: draft.icon, color: draft.color, description: draft.description.trim(), day: isStep() ? draft.day : draft.day || state.taskDay, parent_id: draft.parent };
+    const row = { id: savedId || undefined, title: draft.title.trim(), icon: draft.icon, color: draft.color, description: draft.description.trim(), day: draft.day || null, parent_id: draft.parent };
     savedId = await saveTask(row);
     paintParent(); paintSteps();
   }
@@ -99,7 +104,7 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
       h('div', { class: 'name-pill' }, circle, name),
       h('section', { class: 'field-card' }, h('h3', {}, 'Color'), swatches),
       h('section', { class: 'field-card' }, h('h3', {}, 'Description'), about),
-      h('section', { class: 'field-card' }, dayHead, dayInput),
+      h('section', { class: 'field-card' }, dayHead, dayInput, dayHint),
       h('section', { class: 'field-card' }, h('h3', {}, 'Belongs to'), parentRow),
       stepsCard, save, dup, del, h('div', { class: 'spacer' })));
   paintIcon(); paintParent(); paintSteps(); validate();

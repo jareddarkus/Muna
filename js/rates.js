@@ -1,5 +1,5 @@
 // The 21-day completion rate. Must stay identical to the database functions (rate_parts / pct_of / avg_pct).
-import { state, habitList, valueOf, isDone, taskList, tasksOn } from './store.js';
+import { state, habitList, valueOf, isDone, taskList, tasksOn, effDay } from './store.js';
 import { addDays, dow } from './util.js';
 
 export const WINDOW = 21;
@@ -33,7 +33,7 @@ export function taskParts() {
   for (let i = 0; i < WINDOW; i++) {
     const day = addDays(start, i);
     let n = 0, dn = 0, counted = 0;
-    for (const t of taskList()) if (t.day === day) { n++; if (t.done_at) dn++; if (day < state.today || t.done_at) counted++; }
+    for (const t of taskList()) if (effDay(t) === day) { n++; if (t.done_at) dn++; if (day < state.today || t.done_at) counted++; }
     sched += counted; done += dn;
     days.push({ day, scheduled: n > 0, n, done: dn, counted: counted > 0 });
   }
@@ -60,6 +60,6 @@ export function todayProgress(day = state.viewDay) {
 /** Today screen for tasks: how many of that day's tasks are done. */
 export function taskDayProgress(day = state.taskDay) {
   let n = 0, done = 0;
-  for (const t of tasksOn(day)) { n++; if (t.done_at) done++; }
+  for (const t of tasksOn(day)) { n++; if (t.done_at) done++; } // this day's own section; carried-over tasks do not count
   return { n, done, pct: pctOf(done, n) ?? 0 };
 }
