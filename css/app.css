@@ -423,3 +423,7 @@ img { -webkit-user-drag: none; user-drag: none; }
 .gsi { display: grid; justify-items: center; min-height: 40px; color-scheme: light; } .gsi:empty { display: none; }
 .login-actions .link { font-size: 14px; color: var(--dgray); }
 .carried-title { margin: 6px 10px 2px; }
+
+/* A single-column grid must never grow wider than the screen because of one long name (it used to make the whole screen scroll sideways). */
+.cards, .group-content, .panel-body, .post, .step-list, .parent-list, .group-head, .field-card { grid-template-columns: minmax(0, 1fr); }
+.card-text, .card-title, .card-sub { min-width: 0; max-width: 100%; }
