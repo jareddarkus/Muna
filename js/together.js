@@ -13,8 +13,8 @@ export function togetherStrip(kind, id) {
     if (!rows || rows.length < 2) return;
     el.replaceChildren(
       h('div', { class: 'avatars' }, rows.map((r) => h('span', { class: `tg ${r.status === 'pending' ? 'pending' : ''}`, title: `@${profileOf(r.user_id).username}${r.status === 'pending' ? ' (invited)' : ''}` },
-        avatar(profileOf(r.user_id), 38), r.done ? h('span', { class: 'tg-done' }, icon('check', { size: 12, stroke: 3.5 })) : null))),
-      h('p', { class: 'hint' }, `Together: ${rows.filter((r) => r.done).length} of ${rows.filter((r) => r.status !== 'pending').length} done today`));
+        avatar(profileOf(r.user_id), 38), kind === 'habit' && r.done ? h('span', { class: 'tg-done' }, icon('check', { size: 12, stroke: 3.5 })) : null))),
+      h('p', { class: 'hint' }, kind === 'task' ? 'Shared: everyone sees changes live' : `Together: ${rows.filter((r) => r.done).length} of ${rows.filter((r) => r.status !== 'pending').length} done today`));
     el.hidden = false;
   }).catch(() => {});
   return el;

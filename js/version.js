@@ -1,7 +1,16 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.14.2';
+export const VERSION = '2.15';
 
 export const CHANGELOG = [
+  {
+    version: '2.15',
+    date: 'November 21, 2026',
+    items: [
+      'Shared tasks are now one task for everyone: tick a step, add a sub-step or finish the task and the others see it live. (Habits stay separate: each person logs their own.)',
+      'Fixed: tapping Invite friends several times quickly created the habit or task several times.',
+      'If someone shared a task with you, press and hold it and choose Leave task to remove it from your list.',
+    ],
+  },
   {
     version: '2.14.2',
     date: 'November 21, 2026',

@@ -44,7 +44,7 @@ export const remote = {
       all(() => sb.from('habit_logs').select('habit_id,user_id,day,value').eq('user_id', userId).gte('day', since).order('day')),
       this.loadSocial(userId),
       sb.from('habit_reminders').select('habit_id,remind_at').eq('user_id', userId).then(check),
-      all(() => sb.from('tasks').select('*').eq('owner_id', userId).order('created_at').order('id')),
+      all(() => sb.from('tasks').select('*').order('created_at').order('id')), // my tasks and the ones shared with me (row level security decides)
     ]);
     const profiles = await this.profilesFor([...social.members.map((m) => m.user_id), ...social.friendships.flatMap((f) => [f.requester_id, f.addressee_id]), ...social.invites.map((i) => i.inviter_id), ...social.requests.map((q) => q.user_id), ...social.shares.flatMap((x) => [x.inviter_id, x.invitee_id]), ...social.nudges.map((n) => n.from_id)]);
     return { me, habits, tasks, logs: myLogs, profiles, reminders, ...social };
