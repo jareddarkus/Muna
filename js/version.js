@@ -1,7 +1,15 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.13';
+export const VERSION = '2.14';
 
 export const CHANGELOG = [
+  {
+    version: '2.14',
+    date: 'November 21, 2026',
+    items: [
+      'Shared habits and tasks stay separate: everyone logs their own and has their own 100%. Cards now show when a friend has done it ("@name done"), and the habit or task screen has a Together strip with everyone and who is done today.',
+      'Remind someone: press and hold a shared habit or task and choose Remind someone (or tap the Together strip), then tap the bell next to a friend who has not done it. They get a push notification and a card under Social → Notifications.',
+    ],
+  },
   {
     version: '2.13',
     date: 'November 20, 2026',

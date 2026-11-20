@@ -440,3 +440,7 @@ img { -webkit-user-drag: none; user-drag: none; }
 .avatars { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
 .together { display: grid; justify-items: center; gap: 6px; width: 100%; margin-top: 4px; } .together .hint { font-size: 12px; }
 .tg { position: relative; } .tg .tg-done { position: absolute; right: -3px; bottom: -3px; width: 18px; height: 18px; border-radius: 50%; background: var(--green); color: #fff; border: 2px solid var(--lgray); display: grid; place-items: center; } .tg.pending { opacity: .45; }
+
+.invite-status.ok { color: var(--green); }
+.remind { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--blue); color: #fff; transition: transform .2s var(--ease), opacity .2s; flex: none; } .remind:active { transform: scale(.9); } .remind:disabled { opacity: .4; }
+button.together { cursor: pointer; }

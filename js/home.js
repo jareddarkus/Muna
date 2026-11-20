@@ -4,7 +4,7 @@ import { icon } from './icons.js';
 import { PALETTE, hex } from './colors.js';
 import { ring } from './ui.js';
 import { card, progressRing, habitSub } from './cards.js';
-import { state, subscribe, habitList, isScheduled, valueOf, progressOf, isDone, shiftViewDay, setViewDay, bump, setValue, HISTORY_DAYS, MAX_AHEAD } from './store.js';
+import { state, subscribe, habitList, isScheduled, valueOf, progressOf, isDone, shiftViewDay, setViewDay, bump, setValue, togetherCue, HISTORY_DAYS, MAX_AHEAD } from './store.js';
 import { todayProgress } from './rates.js';
 import { liveValue, isRunning, onTick, discardMissing } from './timer.js';
 import { openHabit } from './habit.js';
@@ -83,7 +83,7 @@ export function mountHome(root) {
       const live = hb.goal_type === 'time' && isToday;
       const v = live ? liveValue(hb.id) : valueOf(hb.id, day);
       const done = isDone(hb, v);
-      c.set({ color: hex(hb.color), icon: hb.icon, name: hb.title, sub: habitSub(hb), done });
+      c.set({ color: hex(hb.color), icon: hb.icon, name: hb.title, sub: [habitSub(hb), togetherCue(hb.id)].filter(Boolean).join(' • '), done });
       c.rb.set(hb, v, progressOf(hb, v), done);
       c.el.classList.toggle('running', live && isRunning(hb.id));
       (done ? finished : pending).push(c);

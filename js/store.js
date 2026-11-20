@@ -1,7 +1,7 @@
 // App state, selectors and actions. UI never talks to Supabase directly.
 import { remote } from './backend-remote.js';
 import { demo } from './backend-demo.js';
-import { todayStr, addDays, dow, diffDays, uuid, clamp, haptic, ymd } from './util.js';
+import { todayStr, addDays, dow, diffDays, uuid, clamp, haptic, ymd, toast } from './util.js';
 
 export const HISTORY_DAYS = 400;
 export const state = {
@@ -19,6 +19,8 @@ export const state = {
   invites: [],
   requests: [], // join requests for groups I administer
   shares: [], // invitations to join a habit / task (sent and received)
+  nudges: [], // reminders other people sent me
+  together: new Map(), // my shared habit / task id -> people in it and whether they are done today
   groupRates: new Map(),
   today: todayStr(),
   viewDay: todayStr(), // the day shown on the Today screen
@@ -34,7 +36,7 @@ export const bus = {
   on(name, fn) { (busHandlers.get(name) || busHandlers.set(name, new Set()).get(name)).add(fn); return () => busHandlers.get(name).delete(fn); },
   emit(name) { busHandlers.get(name)?.forEach((f) => f()); },
 };
-const socialUserIds = (s) => [...s.members.map((m) => m.user_id), ...s.friendships.flatMap((f) => [f.requester_id, f.addressee_id]), ...(s.invites || []).map((i) => i.inviter_id), ...(s.requests || []).map((r) => r.user_id), ...(s.shares || []).flatMap((x) => [x.inviter_id, x.invitee_id])];
+const socialUserIds = (s) => [...s.members.map((m) => m.user_id), ...s.friendships.flatMap((f) => [f.requester_id, f.addressee_id]), ...(s.invites || []).map((i) => i.inviter_id), ...(s.requests || []).map((r) => r.user_id), ...(s.shares || []).flatMap((x) => [x.inviter_id, x.invitee_id]), ...(s.nudges || []).map((n) => n.from_id)];
 let raf;
 export function emit() { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { listeners.forEach((f) => f()); saveCache(); }); }
 
@@ -156,7 +158,7 @@ function saveCache() {
     try {
       localStorage.setItem(`muna.cache.${state.me.id}`, JSON.stringify({
         me: state.me, habits: [...state.habits.values()], tasks: [...state.tasks.values()], logs: [...state.logs].map(([k, value]) => { const [habit_id, user_id, day] = k.split('|'); return { habit_id, user_id, day, value }; }),
-        reminders: [...state.reminders].map(([habit_id, remind_at]) => ({ habit_id, remind_at })), profiles: [...state.profiles.values()], groups: [...state.groups.values()], members: state.members, friendships: state.friendships, invites: state.invites, requests: state.requests, shares: state.shares, rates: [...state.groupRates.values()],
+        reminders: [...state.reminders].map(([habit_id, remind_at]) => ({ habit_id, remind_at })), profiles: [...state.profiles.values()], groups: [...state.groups.values()], members: state.members, friendships: state.friendships, invites: state.invites, requests: state.requests, shares: state.shares, nudges: state.nudges, rates: [...state.groupRates.values()],
       }));
     } catch {}
   }, 1200);
@@ -170,6 +172,7 @@ function applySocial(s) {
   state.invites = s.invites || [];
   state.requests = s.requests || [];
   state.shares = s.shares || [];
+  state.nudges = s.nudges || [];
   state.groupRates = new Map((s.rates || []).map((r) => [r.gid, r]));
 }
 function hydrate(b) {
@@ -234,6 +237,7 @@ async function refresh(userId = state.me.id) {
     rollDay();
     const b = await backend.load(userId, addDays(state.today, -HISTORY_DAYS), addDays(state.today, -2));
     hydrate(b); state.online = true;
+    setTimeout(() => refreshTogether().catch(() => {}), 300);
   } catch (e) {
     console.error(e);
     state.online = false;
@@ -252,7 +256,7 @@ export async function signOut() {
   await backend.signOut();
   if (state.me && !wasDemo) localStorage.removeItem(`muna.cache.${state.me.id}`);
   state.me = null; state.status = 'out'; state.demo = false; backend = remote;
-  state.habits.clear(); state.tasks.clear(); state.logs.clear(); state.groups.clear(); state.members = []; state.friendships = []; state.invites = []; state.requests = []; state.shares = [];
+  state.habits.clear(); state.tasks.clear(); state.logs.clear(); state.groups.clear(); state.members = []; state.friendships = []; state.invites = []; state.requests = []; state.shares = []; state.nudges = []; state.together.clear();
   emit();
 }
 
@@ -262,7 +266,7 @@ function realtimeHandlers() {
     const soc = await backend.loadSocial(state.me.id);
     applySocial(soc);
     await ensureProfiles(socialUserIds(soc));
-    emit();
+    emit(); refreshTogether().catch(() => {});
   }, 400);
   const postsChanged = debounceAsync(async () => bus.emit('posts'), 300);
   return {
@@ -288,6 +292,10 @@ function realtimeHandlers() {
       emit();
     },
     profiles: (p) => { if (p.new?.id) { state.profiles.set(p.new.id, p.new); if (p.new.id === state.me.id) state.me = p.new; emit(); } },
+    nudges: (p) => {
+      refreshSocial();
+      if (p.eventType === 'INSERT' && p.new?.to_id === state.me.id) ensureProfiles([p.new.from_id]).then(() => { toast(`@${profileOf(p.new.from_id).username} is nudging you: ${p.new.title}`, 4500); haptic('medium'); });
+    },
     shares: refreshSocial, group_members: refreshSocial, friendships: refreshSocial, group_invites: refreshSocial, group_requests: refreshSocial,
     posts: postsChanged, comments: postsChanged, post_likes: postsChanged, comment_likes: postsChanged,
     status: (s) => { if (s === 'SUBSCRIBED') { if (subscribedOnce) reloadSilently(); subscribedOnce = true; } },
@@ -478,7 +486,7 @@ export async function removeAvatar() {
 }
 
 // ── social ──
-async function socialRefresh() { const soc = await backend.loadSocial(state.me.id); applySocial(soc); await ensureProfiles(socialUserIds(soc)); emit(); }
+async function socialRefresh() { const soc = await backend.loadSocial(state.me.id); applySocial(soc); await ensureProfiles(socialUserIds(soc)); emit(); refreshTogether().catch(() => {}); }
 export const refreshSocialNow = socialRefresh;
 export async function createGroup(fields) { const g = await backend.createGroup({ ...fields, name: fields.name.trim(), description: (fields.description || '').trim() }); await socialRefresh(); return g; }
 export async function updateGroup(id, patch) { await backend.updateGroup(id, patch); await socialRefresh(); }
@@ -525,7 +533,7 @@ export const isFriend = (uid) => state.friendships.some((f) => f.status === 'acc
 export const friendshipWith = (uid) => state.friendships.find((f) => [f.requester_id, f.addressee_id].includes(uid));
 export const incomingShares = () => state.shares.filter((s) => s.invitee_id === state.me?.id && s.status === 'pending');
 export const sharesOf = (kind, id) => state.shares.filter((s) => s.inviter_id === state.me?.id && (kind === 'habit' ? s.habit_id === id : s.task_id === id));
-export const pendingCount = () => state.invites.length + state.requests.length + incomingShares().length + state.friendships.filter((f) => f.status === 'pending' && f.addressee_id === state.me?.id).length;
+export const pendingCount = () => state.invites.length + state.requests.length + incomingShares().length + state.nudges.length + state.friendships.filter((f) => f.status === 'pending' && f.addressee_id === state.me?.id).length;
 
 export const friendsOf = () => state.friendships.filter((f) => f.status === 'accepted').map((f) => ({ ...f, other: profileOf(f.requester_id === state.me.id ? f.addressee_id : f.requester_id) }));
 export const incomingRequests = () => state.friendships.filter((f) => f.status === 'pending' && f.addressee_id === state.me.id).map((f) => ({ ...f, other: profileOf(f.requester_id) }));
@@ -570,5 +578,36 @@ export async function itemPeople(kind, id) {
   await ensureProfiles(rows.map((r) => r.user_id));
   return rows;
 }
+// ── nudges (remind someone you share a habit / task with) ──
+/** True when someone else has joined this habit / task of mine (or I joined theirs). */
+export function isShared(kind, id) {
+  const me = state.me?.id, k = kind === 'habit' ? 'habit_id' : 'task_id', c = kind === 'habit' ? 'copy_habit_id' : 'copy_task_id';
+  return state.shares.some((s) => s.status === 'accepted' && ((s.inviter_id === me && s[k] === id) || (s.invitee_id === me && s[c] === id)));
+}
+export async function nudgePerson(kind, item, uid) { await backend.sendNudge(kind, item.id, uid); }
+export async function dismissNudge(id) {
+  const prev = state.nudges; state.nudges = prev.filter((n) => n.id !== id); emit();
+  try { await backend.dismissNudge(id); } catch (e) { state.nudges = prev; emit(); throw e; }
+}
+/** Short text for a card: which friends already did it today (empty when none). */
+export function togetherCue(id) {
+  const rows = state.together.get(id); if (!rows) return '';
+  const done = rows.filter((r) => r.user_id !== state.me?.id && r.status !== 'pending' && r.done);
+  return !done.length ? '' : done.length === 1 ? `@${profileOf(done[0].user_id).username} done` : `${done.length} friends done`;
+}
+let togetherBusy = false;
+export async function refreshTogether() {
+  if (togetherBusy || state.demo || state.status !== 'in' || !state.me) return;
+  togetherBusy = true;
+  try {
+    const items = [...habitList().filter((x) => isShared('habit', x.id)).map((x) => ['habit', x.id]), ...taskList().filter((t) => !t.parent_id && isShared('task', t.id)).map((t) => ['task', t.id])];
+    const keep = new Set(items.map((i) => i[1]));
+    for (const id of [...state.together.keys()]) if (!keep.has(id)) state.together.delete(id);
+    for (const [kind, id] of items) { try { state.together.set(id, await itemPeople(kind, id)); } catch {} }
+    emit();
+  } finally { togetherBusy = false; }
+}
+setInterval(() => { if (document.visibilityState === 'visible') refreshTogether(); }, 90000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(refreshTogether, 800); });
 export async function acceptFriend(id) { await backend.acceptFriend(id); await socialRefresh(); }
 export async function removeFriendship(id) { await backend.removeFriendship(id); await socialRefresh(); }

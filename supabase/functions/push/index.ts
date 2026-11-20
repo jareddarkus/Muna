@@ -1,4 +1,4 @@
-// Muna push: serves the public VAPID key, sends a test notification, and (called by pg_cron every minute)
+// Muna push: serves the public VAPID key, sends a test notification, delivers nudges between friends, and (called by pg_cron every minute)
 // delivers due habit reminders. Deployed with verify_jwt = false; each action does its own check.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { generateVapid, sendWebPush, type Vapid } from './webpush.ts';
@@ -56,6 +56,22 @@ Deno.serve(async (req) => {
       const { data: subs } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth').eq('user_id', user.id);
       const rows = (subs || []).map((s) => ({ sub_id: s.id, ...s }));
       const sent = await deliver(rows, { title: 'Muna', body: 'Notifications are working.', tag: 'muna-test', url: './' });
+      return json({ sent });
+    }
+
+    if (action === 'nudge') {
+      // push notification for a nudge the caller just sent (the nudge row itself is created, and checked, by the send_nudge database function)
+      const jwt = (req.headers.get('Authorization') || '').replace(/^Bearer /i, '');
+      const { data: { user } } = await db.auth.getUser(jwt);
+      if (!user) return json({ error: 'not signed in' }, 401);
+      const { data: n } = await db.from('nudges').select('id, to_id, title, pushed_at').eq('id', rest.nudge_id).eq('from_id', user.id).maybeSingle();
+      if (!n) return json({ error: 'no such nudge' }, 404);
+      if (n.pushed_at) return json({ sent: 0 });
+      await db.from('nudges').update({ pushed_at: new Date().toISOString() }).eq('id', n.id);
+      const { data: me } = await db.from('profiles').select('username').eq('id', user.id).maybeSingle();
+      const { data: subs } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth').eq('user_id', n.to_id);
+      const rows = (subs || []).map((x) => ({ sub_id: x.id, ...x }));
+      const sent = await deliver(rows, { title: `@${me?.username || 'A friend'} is nudging you`, body: `Time for "${n.title}"`, tag: `nudge-${n.id}`, url: './' });
       return json({ sent });
     }
 

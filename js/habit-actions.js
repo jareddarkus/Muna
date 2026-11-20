@@ -3,10 +3,11 @@ import { h, toast } from './util.js';
 import { openPanel, panelBar, confirmDialog } from './ui.js';
 import { card } from './cards.js';
 import { hex } from './colors.js';
-import { state, valueOf, setValue, deleteHabit, myGroups, createPost } from './store.js';
+import { state, valueOf, setValue, deleteHabit, myGroups, createPost, isShared } from './store.js';
 import { openHabit } from './habit.js';
 import { openEditor } from './editor.js';
 import { openInvite } from './invite.js';
+import { openTogether } from './together-panel.js';
 
 const fail = (e) => toast(e?.message || 'Something went wrong');
 
@@ -34,6 +35,7 @@ export function habitItems(hb, { day = state.viewDay, extra = [] } = {}) {
     ...extra,
     { label: 'Edit', icon: 'pencil', onSelect: () => openEditor(hb.id) },
     state.demo ? null : { label: 'Invite friends', icon: 'user-plus', onSelect: () => openInvite('habit', hb) },
+    !state.demo && isShared('habit', hb.id) ? { label: 'Remind someone', icon: 'bell', onSelect: () => openTogether('habit', hb) } : null,
     state.demo ? null : { label: 'Share to a group', icon: 'send', onSelect: () => shareHabit(hb) },
     v > 0 ? { label: 'Reset this day', icon: 'refresh', onSelect: () => setValue(hb, 0, day) } : null,
     { label: 'Delete', icon: 'trash', danger: true, onSelect: async () => {

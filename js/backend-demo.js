@@ -12,8 +12,8 @@ const save = () => { try { localStorage.setItem(KEY, JSON.stringify(db)); } catc
 
 export const demo = {
   name: 'demo',
-  async load() { return { me: db.me, habits: db.habits, tasks: db.tasks, logs: db.logs, reminders: db.reminders, profiles: [db.me], groups: [], members: [], friendships: [], invites: [], requests: [], shares: [], rates: [] }; },
-  async loadSocial() { return { groups: [], members: [], friendships: [], invites: [], requests: [], shares: [], rates: [] }; },
+  async load() { return { me: db.me, habits: db.habits, tasks: db.tasks, logs: db.logs, reminders: db.reminders, profiles: [db.me], groups: [], members: [], friendships: [], invites: [], requests: [], shares: [], nudges: [], rates: [] }; },
+  async loadSocial() { return { groups: [], members: [], friendships: [], invites: [], requests: [], shares: [], nudges: [], rates: [] }; },
   async profilesFor() { return [db.me]; },
   async signOut() { localStorage.removeItem(KEY); },
 
@@ -51,7 +51,7 @@ export const demo = {
   searchGroups: needAccount, recommendedGroups: needAccount, searchProfiles: needAccount, memberRate: needAccount, friendHabits: needAccount,
   groupOverview: needAccount, listPosts: needAccount, createPost: needAccount, deletePost: needAccount, togglePostLike: needAccount,
   listComments: needAccount, addComment: needAccount, deleteComment: needAccount, toggleCommentLike: needAccount,
-  inviteShare: needAccount, removeShare: needAccount, respondShare: needAccount, habitPeople: needAccount, taskPeople: needAccount,
+  sendNudge: needAccount, dismissNudge: needAccount, inviteShare: needAccount, removeShare: needAccount, respondShare: needAccount, habitPeople: needAccount, taskPeople: needAccount,
   findProfile: needAccount, requestFriend: needAccount, acceptFriend: needAccount, removeFriendship: needAccount,
   listen() { return () => {}; },
 };

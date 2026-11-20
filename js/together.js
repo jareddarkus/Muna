@@ -3,10 +3,11 @@ import { h } from './util.js';
 import { icon } from './icons.js';
 import { avatar } from './ui.js';
 import { state, itemPeople, profileOf } from './store.js';
+import { openTogether } from './together-panel.js';
 
 /** Returns an element that fills itself once (nothing is drawn when nobody has been invited). */
 export function togetherStrip(kind, id) {
-  const el = h('div', { class: 'together', hidden: true });
+  const el = h('button', { type: 'button', class: 'together', hidden: true, 'aria-label': 'See who is done and send a reminder', onClick: () => { const it = (kind === 'habit' ? state.habits : state.tasks).get(id); if (it) openTogether(kind, it); } });
   if (state.demo || !state.me) return el;
   itemPeople(kind, id).then((rows) => {
     if (!rows || rows.length < 2) return;

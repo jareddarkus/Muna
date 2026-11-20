@@ -8,9 +8,11 @@ import { openIconPicker } from './editor.js';
 import { openGroup, groupItems } from './group.js';
 import { attachHold } from './hold.js';
 import { openProfile, personItems } from './profile.js';
+import { openHabit } from './habit.js';
+import { openTask } from './task-sheet.js';
 import {
   state, subscribe, myGroups, friendsOf, incomingRequests, outgoingRequests, profileOf, searchGroups, recommendedGroups, searchUsers,
-  acceptFriend, removeFriendship, respondInvite, respondShare, incomingShares, respondRequest, createGroup, joinGroup, requestJoin, addFriendById, memberRate, friendshipWith, refreshSocialNow,
+  acceptFriend, removeFriendship, respondInvite, respondShare, incomingShares, dismissNudge, respondRequest, createGroup, joinGroup, requestJoin, addFriendById, memberRate, friendshipWith, refreshSocialNow,
 } from './store.js';
 
 const fail = (e) => toast(e?.code === '23505' ? 'That name is already taken.' : e?.message || 'Something went wrong');
@@ -82,6 +84,13 @@ export function mountSocial(root) {
       const c = card({ onClick: () => openGroup(g.id) });
       c.set({ color: hex(g.color), icon: g.icon, name: g.name, sub: `@${from.username} invited you`, done: false, showFlag: false });
       c.slot.append(h('span', { class: 'mini-actions' }, miniBtn('yes', 'check', 'Accept', () => respondInvite(inv.id, true).then(() => toast('Joined')).catch(fail)), miniBtn('no', 'x', 'Decline', () => respondInvite(inv.id, false).catch(fail))));
+      rows.push(c.el);
+    }
+    for (const n of state.nudges) {
+      const from = profileOf(n.from_id), isHabit = !!n.habit_id;
+      const c = card({ onClick: () => { dismissNudge(n.id).catch(() => {}); (isHabit ? openHabit(n.habit_id) : openTask(n.task_id)); } });
+      c.set({ color: hex(n.color), icon: n.icon, name: n.title, sub: `@${from.username} is nudging you`, done: false, showFlag: false });
+      c.slot.append(miniBtn('no', 'x', 'Dismiss', () => dismissNudge(n.id).catch(fail)));
       rows.push(c.el);
     }
     for (const sh of incomingShares()) {
