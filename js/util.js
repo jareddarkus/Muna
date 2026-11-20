@@ -163,3 +163,9 @@ export function ringNumber(hb, v) {
   }
   return String(Math.floor(v));
 }
+
+// How much one tap on the ring (or one press of + / −) adds, depending on the size of the goal.
+export const countStep = (target) => (target <= 25 ? 1 : target <= 100 ? 5 : target <= 500 ? 10 : 50);
+export const minuteStep = (seconds) => { const m = (seconds || 0) / 60; return m <= 10 ? 1 : m <= 20 ? 2 : m <= 60 ? 5 : m <= 180 ? 10 : 15; };
+/** In the habit's own unit: seconds for timed goals, a number for counts. */
+export const tapAmount = (hb) => (hb.goal_type === 'time' ? minuteStep(hb.target) * 60 : countStep(hb.target));

@@ -1,5 +1,5 @@
 // The screen for one habit: record progress (counter or timer), see its 21-day rate, jump to edit.
-import { h, tween, fmtClock, fmtDay, tap, goalLabel } from './util.js';
+import { h, tween, fmtClock, fmtDay, tap, goalLabel, tapAmount, minuteStep, countStep } from './util.js';
 import { icon } from './icons.js';
 import { PALETTE, hex } from './colors.js';
 import { ring, openPanel, panelBar } from './ui.js';
@@ -7,12 +7,6 @@ import { state, subscribe, valueOf, progressOf, isDone, bump, setValue } from '.
 import { liveValue, isRunning, toggle, onTick } from './timer.js';
 import { openEditor } from './editor.js';
 import { attachRingActions } from './ring-actions.js';
-
-/** Minutes added or removed by the − / + buttons: small for short goals, bigger for long ones. */
-function stepFor(hb) {
-  const m = (hb.target || 0) / 60;
-  return m <= 10 ? 1 : m <= 20 ? 2 : m <= 60 ? 5 : m <= 180 ? 10 : 15;
-}
 
 export function openHabit(id, day = state.viewDay) {
   const first = state.habits.get(id);
@@ -35,7 +29,7 @@ export function openHabit(id, day = state.viewDay) {
   attachRingActions(heroBtn, { ring: r, state: ringState,
     getProgress: () => { const hb = state.habits.get(id); return !hb ? 0 : isDone(hb, curValue()) ? 1 : progressOf(hb, curValue()); },
     isDone: () => { const hb = state.habits.get(id); return !hb || future || isDone(hb, curValue()); },
-    onTap: () => { const hb = state.habits.get(id); if (hb && !future) bump(hb, hb.goal_type === 'time' ? 60 : 1, day); },
+    onTap: () => { const hb = state.habits.get(id); if (hb && !future) bump(hb, tapAmount(hb), day); },
     onComplete: () => { const hb = state.habits.get(id); if (hb) setValue(hb, hb.target, day); } });
 
   panel.el.append(panelBar(panel, { left: edit, title: titleEl }),
@@ -46,11 +40,11 @@ export function openHabit(id, day = state.viewDay) {
   const round = (cls, label, ic, fn) => h('button', { type: 'button', class: `big-btn ${cls}`, 'aria-label': label, onClick: () => { tap(); fn(); } }, ic);
   function build(hb) {
     const kind = hb.goal_type === 'time' ? (isToday ? 'time' : 'time-manual') : hb.target === 1 ? 'check' : 'count';
-    const step = stepFor(hb), key = kind + hb.target;
+    const step = minuteStep(hb.target), cstep = countStep(hb.target), key = kind + hb.target;
     if (built === key) return;
     built = key; controls.replaceChildren();
     if (kind === 'check') controls.append(round('main', 'Toggle done', icon('check', { size: 37.4, stroke: 3.86 }), () => setValue(hb, valueOf(hb.id, day) >= 1 ? 0 : 1, day)));
-    else if (kind === 'count') controls.append(round('side', 'Decrease', icon('minus', { size: 30, stroke: 2.2 }), () => bump(hb, -1, day)), round('main', 'Increase', icon('plus', { size: 34.5, stroke: 2.09 }), () => bump(hb, 1, day)));
+    else if (kind === 'count') controls.append(round('side', 'Decrease', icon('minus', { size: 30, stroke: 2.2 }), () => bump(hb, -cstep, day)), round('main', 'Increase', icon('plus', { size: 34.5, stroke: 2.09 }), () => bump(hb, cstep, day)));
     else if (kind === 'time-manual') controls.append(round('side txt', `Remove ${step} minutes`, `−${step}`, () => bump(hb, -step * 60, day)), round('main txt', `Add ${step} minutes`, `+${step}`, () => bump(hb, step * 60, day)));
     else controls.append(round('side txt', `Remove ${step} minutes`, `−${step}`, () => bump(hb, -step * 60, day)),
       round('main play', 'Start or pause', h('span', { class: 'pp' }, h('span', { class: 'i-play' }, icon('player-play', { filled: true, size: 34 })), h('span', { class: 'i-pause' }, icon('player-pause', { filled: true, size: 34 }))), () => toggle(hb)),

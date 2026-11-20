@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.12';
+export const VERSION = '2.12.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.12.1',
+    date: 'November 20, 2026',
+    items: ['Tap on the progress ring (Today card and habit screen) now adds an amount that fits the goal: 1, 2, 5, 10 or 15 minutes for timed goals, and 1, 5, 10 or 50 for big counts. Press and hold still fills the circle.'],
+  },
   {
     version: '2.12',
     date: 'November 20, 2026',
