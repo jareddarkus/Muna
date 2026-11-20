@@ -42,10 +42,12 @@ export function progressRing() {
       r.color(hex(hb.color));
       if (!api.filling) r.set(done ? 1 : p);
       el.classList.toggle('done', done);
-      const k = done ? 'check' : ringNumber(hb, value);
+      // exactly the goal: a check. More than the goal: the amount you did, so you can see by how much
+      const over = done && value > hb.target;
+      const k = over ? ringNumber(hb, value) : done ? 'check' : ringNumber(hb, value);
       if (k === key) return;
       key = k;
-      if (done) center.replaceChildren(icon('check', { size: 37, stroke: 3.86 }));
+      if (done && !over) center.replaceChildren(icon('check', { size: 37, stroke: 3.86 }));
       else { center.textContent = k; center.classList.toggle('small', k.length > 2); }
     },
   };
