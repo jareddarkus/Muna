@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.12.1';
+export const VERSION = '2.12.2';
 
 export const CHANGELOG = [
+  {
+    version: '2.12.2',
+    date: 'November 20, 2026',
+    items: ['If you do more than the goal, the ring on the habit card shows how much you did instead of the check.'],
+  },
   {
     version: '2.12.1',
     date: 'November 20, 2026',
