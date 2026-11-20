@@ -4,13 +4,14 @@ import { icon, habitIcon } from './icons.js';
 import { PALETTE, COLORS } from './colors.js';
 
 // ───────────── rings ─────────────
+// (The arc is rotated -90deg, so the shadow offset is given in the rotated frame: dx=-8 there is 8px straight DOWN on screen.)
 // Big ring: 159px box, 12px stroke, track #E9E5EF, green arc with a soft glow. Small ring: 60px box, 6px stroke.
 let ringId = 0;
 export function ring({ size = 159, stroke = 12, color = PALETTE.green, glow = false, cls = '' } = {}) {
   const r = (size - stroke) / 2, C = 2 * Math.PI * r, id = `rg${ringId++}`, c = size / 2;
   const el = h('div', { class: `ring ${cls}`, style: { width: `${size}px`, height: `${size}px` } });
   el.innerHTML = `<svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" overflow="visible" aria-hidden="true">
-    ${glow ? `<defs><filter id="${id}" x="-30%" y="-30%" width="160%" height="170%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="${color}" flood-opacity=".5" class="glow"/></filter></defs>` : ''}
+    ${glow ? `<defs><filter id="${id}" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB"><feDropShadow dx="-8" dy="0" stdDeviation="6" flood-color="${color}" flood-opacity=".5" class="glow"/></filter></defs>` : ''}
     <circle cx="${c}" cy="${c}" r="${r}" fill="none" style="stroke: var(--track)" stroke-width="${stroke}"/>
     <circle class="ring-bar" cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"
       stroke-dasharray="${C}" stroke-dashoffset="${C}" transform="rotate(-90 ${c} ${c})" ${glow ? `filter="url(#${id})"` : ''}/></svg>`;
