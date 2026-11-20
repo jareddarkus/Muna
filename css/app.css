@@ -427,3 +427,16 @@ img { -webkit-user-drag: none; user-drag: none; }
 /* A single-column grid must never grow wider than the screen because of one long name (it used to make the whole screen scroll sideways). */
 .cards, .group-content, .panel-body, .post, .step-list, .parent-list, .group-head, .field-card { grid-template-columns: minmax(0, 1fr); }
 .card-text, .card-title, .card-sub { min-width: 0; max-width: 100%; }
+
+/* invite friends */
+.invite-list { display: grid; gap: 8px; }
+.invite-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 10px 16px 10px 10px; border-radius: 30px; background: var(--card); text-align: left; }
+.invite-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 16px; }
+.invite-status { font-size: 13px; color: var(--dgray); }
+.invite-x { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: var(--dgray); }
+.invite-check { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: transparent; box-shadow: inset 0 0 0 2.5px var(--gray); transition: background .3s, color .3s, box-shadow .3s; }
+.invite-row.pick.on .invite-check { background: var(--green); color: #fff; box-shadow: none; }
+.invite-row.pick { cursor: pointer; transition: transform .2s var(--ease); } .invite-row.pick:active { transform: scale(.98); }
+.avatars { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.together { display: grid; justify-items: center; gap: 6px; width: 100%; margin-top: 4px; } .together .hint { font-size: 12px; }
+.tg { position: relative; } .tg .tg-done { position: absolute; right: -3px; bottom: -3px; width: 18px; height: 18px; border-radius: 50%; background: var(--green); color: #fff; border: 2px solid var(--lgray); display: grid; place-items: center; } .tg.pending { opacity: .45; }

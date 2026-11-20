@@ -10,7 +10,7 @@ import { attachHold } from './hold.js';
 import { openProfile, personItems } from './profile.js';
 import {
   state, subscribe, myGroups, friendsOf, incomingRequests, outgoingRequests, profileOf, searchGroups, recommendedGroups, searchUsers,
-  acceptFriend, removeFriendship, respondInvite, respondRequest, createGroup, joinGroup, requestJoin, addFriendById, memberRate, friendshipWith, refreshSocialNow,
+  acceptFriend, removeFriendship, respondInvite, respondShare, incomingShares, respondRequest, createGroup, joinGroup, requestJoin, addFriendById, memberRate, friendshipWith, refreshSocialNow,
 } from './store.js';
 
 const fail = (e) => toast(e?.code === '23505' ? 'That name is already taken.' : e?.message || 'Something went wrong');
@@ -82,6 +82,13 @@ export function mountSocial(root) {
       const c = card({ onClick: () => openGroup(g.id) });
       c.set({ color: hex(g.color), icon: g.icon, name: g.name, sub: `@${from.username} invited you`, done: false, showFlag: false });
       c.slot.append(h('span', { class: 'mini-actions' }, miniBtn('yes', 'check', 'Accept', () => respondInvite(inv.id, true).then(() => toast('Joined')).catch(fail)), miniBtn('no', 'x', 'Decline', () => respondInvite(inv.id, false).catch(fail))));
+      rows.push(c.el);
+    }
+    for (const sh of incomingShares()) {
+      const from = profileOf(sh.inviter_id), isHabit = !!sh.habit_id;
+      const c = card({});
+      c.set({ color: hex(sh.color), icon: sh.icon, name: sh.title || (isHabit ? 'A habit' : 'A task'), sub: `From @${from.username}`, done: false, showFlag: false });
+      c.slot.append(h('span', { class: 'mini-actions' }, miniBtn('yes', 'check', 'Accept', () => respondShare(sh.id, true).then(() => toast(isHabit ? 'Added to your habits' : 'Added to your tasks')).catch(fail)), miniBtn('no', 'x', 'Decline', () => respondShare(sh.id, false).catch(fail))));
       rows.push(c.el);
     }
     for (const f of incomingRequests()) {

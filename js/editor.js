@@ -3,8 +3,10 @@ import { h, WEEKDAYS, debounce, toast, clamp } from './util.js';
 import { icon, habitIcon, loadIndex, searchIcons, iconRefs, parseRef } from './icons.js';
 import { COLORS, COLOR_NAMES, PALETTE, hex, colorKey } from './colors.js';
 import { openPanel, panelBar, segmented, dangerButton, toggleSwitch, iconCircle } from './ui.js';
-import { state, saveHabit, deleteHabit, saveReminder } from './store.js';
+import { state, subscribe, saveHabit, deleteHabit, saveReminder } from './store.js';
 import { permissionState, isEnabled } from './push.js';
+import { openInvite } from './invite.js';
+import { sharesOf } from './store.js';
 
 const SUGGESTIONS = ['water', 'run', 'book', 'sleep', 'meditate', 'gym', 'food', 'music', 'money', 'heart', 'plant', 'code', 'brush', 'bike', 'study'];
 
@@ -14,7 +16,8 @@ export function openEditor(id = null) {
     ? { ...existing, color: colorKey(existing.color), days: [...existing.days], start: existing.created_on, remind: state.reminders.get(existing.id) || '', minutes: existing.goal_type === 'time' ? Math.round(existing.target / 60) || 30 : 30, count: existing.goal_type === 'count' ? existing.target : 5 }
     : { title: '', icon: 'outline:star', color: 'purple', goal_type: 'count', unit: '', days: [0, 1, 2, 3, 4, 5, 6], minutes: 30, count: 5, start: state.today, remind: '' };
 
-  const panel = openPanel({ cls: 'editor', tapClose: true });
+  const onEditorClose = [];
+  const panel = openPanel({ cls: 'editor', tapClose: true, onClose: () => onEditorClose.forEach((f) => f()) });
   const paint = () => panel.el.style.setProperty('--c', hex(draft.color));
   paint();
 
@@ -76,19 +79,29 @@ export function openEditor(id = null) {
 
   const save = h('button', { type: 'button', class: 'pill primary block', onClick: onSave }, existing ? 'Save changes' : 'Add habit');
   function validate() { save.disabled = !draft.title.trim(); }
+  let savedId = existing?.id || null; // set once the habit exists (so friends can be invited before the final save)
+  async function persist() {
+    const time = draft.goal_type === 'time';
+    const habitId = await saveHabit({
+      id: savedId || undefined, title: draft.title.trim(), icon: draft.icon, color: draft.color, goal_type: draft.goal_type,
+      target: time ? draft.minutes * 60 : draft.count, unit: time ? '' : draft.unit.trim(), days: draft.days, group_id: null, created_on: draft.start,
+    });
+    savedId = habitId;
+    await saveReminder(habitId, draft.remind || null).catch((e) => { toast('Saved, but the reminder could not be set.'); console.error(e); });
+    return habitId;
+  }
   async function onSave() {
     if (!draft.title.trim()) return;
     save.disabled = true;
-    const time = draft.goal_type === 'time';
-    try {
-      const habitId = await saveHabit({
-        id: existing?.id, title: draft.title.trim(), icon: draft.icon, color: draft.color, goal_type: draft.goal_type,
-        target: time ? draft.minutes * 60 : draft.count, unit: time ? '' : draft.unit.trim(), days: draft.days, group_id: null, created_on: draft.start,
-      });
-      await saveReminder(habitId, draft.remind || null).catch((e) => { toast('Saved, but the reminder could not be set.'); console.error(e); });
-      panel.close();
-    } catch (e) { toast(e.message || 'Could not save'); save.disabled = false; }
+    try { await persist(); panel.close(); } catch (e) { toast(e.message || 'Could not save'); save.disabled = false; }
   }
+  const inviteCount = h('span', { class: 'ver-chip', hidden: true });
+  const inviteRow = h('button', { type: 'button', class: 'list-pill', onClick: async () => {
+    if (!draft.title.trim()) { toast('Give it a name first.'); name.focus(); return; }
+    try { await persist(); openInvite('habit', state.habits.get(savedId)); } catch (e) { toast(e.message || 'Could not save'); }
+  } }, h('span', {}, 'Invite friends'), inviteCount, icon('chevron-right', { size: 22, stroke: 2 }));
+  const paintInvites = () => { const n = savedId ? sharesOf('habit', savedId).length : 0; inviteCount.hidden = !n; inviteCount.textContent = String(n); };
+  const unsubInv = subscribe(paintInvites); paintInvites(); onEditorClose.push(unsubInv);
   const del = existing ? dangerButton('Delete habit', 'This removes the habit and all of its history. It cannot be undone.', async () => { await deleteHabit(existing.id); panel.close(); }, 'block') : null;
 
   panel.el.append(
@@ -100,6 +113,7 @@ export function openEditor(id = null) {
       h('section', { class: 'field-card' }, h('h3', {}, 'Repeat'), days),
       h('section', { class: 'field-card' }, h('h3', {}, 'Starts'), startInput),
       h('section', { class: 'field-card' }, h('div', { class: 'row-between' }, h('h3', {}, 'Reminder'), remindSwitch.el), timeInput, remindNote),
+      state.demo ? null : h('section', { class: 'field-card' }, h('h3', {}, 'Together'), inviteRow),
       save, del, h('div', { class: 'spacer' })));
   paintIcon(); paintGoal(); paintRemind(); validate();
   if (!existing) setTimeout(() => name.focus({ preventScroll: true }), 400);

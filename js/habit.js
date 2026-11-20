@@ -7,6 +7,7 @@ import { state, subscribe, valueOf, progressOf, isDone, bump, setValue } from '.
 import { liveValue, isRunning, toggle, onTick } from './timer.js';
 import { openEditor } from './editor.js';
 import { attachRingActions } from './ring-actions.js';
+import { togetherStrip } from './together.js';
 
 export function openHabit(id, day = state.viewDay) {
   const first = state.habits.get(id);
@@ -34,7 +35,7 @@ export function openHabit(id, day = state.viewDay) {
 
   panel.el.append(panelBar(panel, { left: edit, title: titleEl }),
     h('div', { class: 'panel-body center' },
-      heroBtn, controls, isToday ? null : h('p', { class: 'habit-sub center' }, fmtDay(day, { weekday: 'short', day: 'numeric', month: 'short' }))));
+      heroBtn, controls, togetherStrip('habit', id), isToday ? null : h('p', { class: 'habit-sub center' }, fmtDay(day, { weekday: 'short', day: 'numeric', month: 'short' }))));
 
   let built = null;
   const round = (cls, label, ic, fn) => h('button', { type: 'button', class: `big-btn ${cls}`, 'aria-label': label, onClick: () => { tap(); fn(); } }, ic);

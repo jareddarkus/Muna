@@ -1,7 +1,15 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.12.4';
+export const VERSION = '2.13';
 
 export const CHANGELOG = [
+  {
+    version: '2.13',
+    date: 'November 20, 2026',
+    items: [
+      'Invite friends to a habit or a task: in its edit screen (Together → Invite friends) or from the press-and-hold menu. You can only invite friends, and as many as you like.',
+      'They get the invitation in Social → Notifications. When they accept, they get their own copy to log, and the habit or task screen shows who is done today.',
+    ],
+  },
   {
     version: '2.12.4',
     date: 'November 20, 2026',

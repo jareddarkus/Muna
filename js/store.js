@@ -18,6 +18,7 @@ export const state = {
   friendships: [],
   invites: [],
   requests: [], // join requests for groups I administer
+  shares: [], // invitations to join a habit / task (sent and received)
   groupRates: new Map(),
   today: todayStr(),
   viewDay: todayStr(), // the day shown on the Today screen
@@ -33,7 +34,7 @@ export const bus = {
   on(name, fn) { (busHandlers.get(name) || busHandlers.set(name, new Set()).get(name)).add(fn); return () => busHandlers.get(name).delete(fn); },
   emit(name) { busHandlers.get(name)?.forEach((f) => f()); },
 };
-const socialUserIds = (s) => [...s.members.map((m) => m.user_id), ...s.friendships.flatMap((f) => [f.requester_id, f.addressee_id]), ...(s.invites || []).map((i) => i.inviter_id), ...(s.requests || []).map((r) => r.user_id)];
+const socialUserIds = (s) => [...s.members.map((m) => m.user_id), ...s.friendships.flatMap((f) => [f.requester_id, f.addressee_id]), ...(s.invites || []).map((i) => i.inviter_id), ...(s.requests || []).map((r) => r.user_id), ...(s.shares || []).flatMap((x) => [x.inviter_id, x.invitee_id])];
 let raf;
 export function emit() { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { listeners.forEach((f) => f()); saveCache(); }); }
 
@@ -155,7 +156,7 @@ function saveCache() {
     try {
       localStorage.setItem(`muna.cache.${state.me.id}`, JSON.stringify({
         me: state.me, habits: [...state.habits.values()], tasks: [...state.tasks.values()], logs: [...state.logs].map(([k, value]) => { const [habit_id, user_id, day] = k.split('|'); return { habit_id, user_id, day, value }; }),
-        reminders: [...state.reminders].map(([habit_id, remind_at]) => ({ habit_id, remind_at })), profiles: [...state.profiles.values()], groups: [...state.groups.values()], members: state.members, friendships: state.friendships, invites: state.invites, requests: state.requests, rates: [...state.groupRates.values()],
+        reminders: [...state.reminders].map(([habit_id, remind_at]) => ({ habit_id, remind_at })), profiles: [...state.profiles.values()], groups: [...state.groups.values()], members: state.members, friendships: state.friendships, invites: state.invites, requests: state.requests, shares: state.shares, rates: [...state.groupRates.values()],
       }));
     } catch {}
   }, 1200);
@@ -168,6 +169,7 @@ function applySocial(s) {
   state.friendships = s.friendships;
   state.invites = s.invites || [];
   state.requests = s.requests || [];
+  state.shares = s.shares || [];
   state.groupRates = new Map((s.rates || []).map((r) => [r.gid, r]));
 }
 function hydrate(b) {
@@ -250,7 +252,7 @@ export async function signOut() {
   await backend.signOut();
   if (state.me && !wasDemo) localStorage.removeItem(`muna.cache.${state.me.id}`);
   state.me = null; state.status = 'out'; state.demo = false; backend = remote;
-  state.habits.clear(); state.tasks.clear(); state.logs.clear(); state.groups.clear(); state.members = []; state.friendships = []; state.invites = []; state.requests = [];
+  state.habits.clear(); state.tasks.clear(); state.logs.clear(); state.groups.clear(); state.members = []; state.friendships = []; state.invites = []; state.requests = []; state.shares = [];
   emit();
 }
 
@@ -286,7 +288,7 @@ function realtimeHandlers() {
       emit();
     },
     profiles: (p) => { if (p.new?.id) { state.profiles.set(p.new.id, p.new); if (p.new.id === state.me.id) state.me = p.new; emit(); } },
-    group_members: refreshSocial, friendships: refreshSocial, group_invites: refreshSocial, group_requests: refreshSocial,
+    shares: refreshSocial, group_members: refreshSocial, friendships: refreshSocial, group_invites: refreshSocial, group_requests: refreshSocial,
     posts: postsChanged, comments: postsChanged, post_likes: postsChanged, comment_likes: postsChanged,
     status: (s) => { if (s === 'SUBSCRIBED') { if (subscribedOnce) reloadSilently(); subscribedOnce = true; } },
   };
@@ -521,7 +523,9 @@ export const copyHabit = (snap) => {
 };
 export const isFriend = (uid) => state.friendships.some((f) => f.status === 'accepted' && [f.requester_id, f.addressee_id].includes(uid));
 export const friendshipWith = (uid) => state.friendships.find((f) => [f.requester_id, f.addressee_id].includes(uid));
-export const pendingCount = () => state.invites.length + state.requests.length + state.friendships.filter((f) => f.status === 'pending' && f.addressee_id === state.me?.id).length;
+export const incomingShares = () => state.shares.filter((s) => s.invitee_id === state.me?.id && s.status === 'pending');
+export const sharesOf = (kind, id) => state.shares.filter((s) => s.inviter_id === state.me?.id && (kind === 'habit' ? s.habit_id === id : s.task_id === id));
+export const pendingCount = () => state.invites.length + state.requests.length + incomingShares().length + state.friendships.filter((f) => f.status === 'pending' && f.addressee_id === state.me?.id).length;
 
 export const friendsOf = () => state.friendships.filter((f) => f.status === 'accepted').map((f) => ({ ...f, other: profileOf(f.requester_id === state.me.id ? f.addressee_id : f.requester_id) }));
 export const incomingRequests = () => state.friendships.filter((f) => f.status === 'pending' && f.addressee_id === state.me.id).map((f) => ({ ...f, other: profileOf(f.requester_id) }));
@@ -551,6 +555,20 @@ export async function addFriendById(uid) {
   }
   await backend.requestFriend(state.me.id, uid);
   await socialRefresh();
+}
+// ── invite friends to join a habit / task ──
+export async function inviteFriends(kind, item, uids) {
+  const key = kind === 'habit' ? 'habit_id' : 'task_id';
+  await backend.inviteShare(uids.map((uid) => ({ [key]: item.id, invitee_id: uid, title: item.title, icon: item.icon, color: item.color })));
+  await socialRefresh();
+}
+export async function removeShare(id) { await backend.removeShare(id); await socialRefresh(); }
+export async function respondShare(id, accept) { await backend.respondShare(id, accept); await socialRefresh(); if (accept) await reload(); }
+/** Everyone in a shared habit / task and whether they are done today (needs one of your own items). */
+export async function itemPeople(kind, id) {
+  const rows = await (kind === 'habit' ? backend.habitPeople(id) : backend.taskPeople(id));
+  await ensureProfiles(rows.map((r) => r.user_id));
+  return rows;
 }
 export async function acceptFriend(id) { await backend.acceptFriend(id); await socialRefresh(); }
 export async function removeFriendship(id) { await backend.removeFriendship(id); await socialRefresh(); }
