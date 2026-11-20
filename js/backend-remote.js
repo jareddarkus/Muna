@@ -46,16 +46,17 @@ export const remote = {
       sb.from('habit_reminders').select('habit_id,remind_at').eq('user_id', userId).then(check),
       all(() => sb.from('tasks').select('*').eq('owner_id', userId).order('created_at').order('id')),
     ]);
-    const profiles = await this.profilesFor([...social.members.map((m) => m.user_id), ...social.friendships.flatMap((f) => [f.requester_id, f.addressee_id]), ...social.invites.map((i) => i.inviter_id), ...social.requests.map((q) => q.user_id), ...social.shares.flatMap((x) => [x.inviter_id, x.invitee_id])]);
+    const profiles = await this.profilesFor([...social.members.map((m) => m.user_id), ...social.friendships.flatMap((f) => [f.requester_id, f.addressee_id]), ...social.invites.map((i) => i.inviter_id), ...social.requests.map((q) => q.user_id), ...social.shares.flatMap((x) => [x.inviter_id, x.invitee_id]), ...social.nudges.map((n) => n.from_id)]);
     return { me, habits, tasks, logs: myLogs, profiles, reminders, ...social };
   },
   async loadSocial(userId) {
-    const [members, friendships, invites, requests, shares] = await Promise.all([
+    const [members, friendships, invites, requests, shares, nudges] = await Promise.all([
       sb.from('group_members').select('*').then(check),
       sb.from('friendships').select('*').order('created_at').then(check),
       sb.from('group_invites').select('*').eq('invitee_id', userId).then(check),
       sb.from('group_requests').select('*').then(check),
       sb.from('shares').select('*').order('created_at').then(check),
+      sb.from('nudges').select('*').eq('to_id', userId).order('created_at', { ascending: false }).limit(30).then(check),
     ]);
     const mine = members.filter((m) => m.user_id === userId).map((m) => m.group_id);
     const ids = [...new Set([...mine, ...invites.map((i) => i.group_id), ...requests.map((q) => q.group_id)])];
@@ -63,7 +64,7 @@ export const remote = {
       ids.length ? sb.from('groups').select('*').in('id', ids).then(check) : [],
       mine.length ? sb.rpc('group_rates', { gids: mine }).then(check) : [],
     ]);
-    return { groups, members, friendships, invites, requests, shares, rates };
+    return { groups, members, friendships, invites, requests, shares, nudges, rates };
   },
   async profilesFor(ids) {
     ids = [...new Set(ids)];
@@ -184,13 +185,20 @@ export const remote = {
   async respondShare(id, accept) { check(await sb.rpc('respond_share', { sid: id, accept })); },
   async habitPeople(id) { return check(await sb.rpc('habit_people', { item: id })); },
   async taskPeople(id) { return check(await sb.rpc('task_people', { item: id })); },
+  /** Creates the nudge (the database checks who may nudge whom) and then asks the push function to deliver it. */
+  async sendNudge(kind, item, target) {
+    const id = check(await sb.rpc('send_nudge', { kind, item, target }));
+    sb.auth.getSession().then(({ data }) => fetch(`${SUPABASE_URL}/functions/v1/push`, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: `Bearer ${data.session?.access_token}` }, body: JSON.stringify({ action: 'nudge', nudge_id: id }) })).catch(() => {});
+    return id;
+  },
+  async dismissNudge(id) { check(await sb.from('nudges').delete().eq('id', id)); },
   async acceptFriend(id) { check(await sb.from('friendships').update({ status: 'accepted' }).eq('id', id)); },
   async removeFriendship(id) { check(await sb.from('friendships').delete().eq('id', id)); },
 
   /** Live changes. Handlers get the raw postgres_changes payload. */
   listen(handlers) {
     const ch = sb.channel('muna-sync');
-    for (const t of ['habits', 'tasks', 'shares', 'habit_logs', 'habit_reminders', 'group_members', 'group_invites', 'group_requests', 'friendships', 'posts', 'comments', 'post_likes', 'comment_likes']) {
+    for (const t of ['habits', 'tasks', 'shares', 'nudges', 'habit_logs', 'habit_reminders', 'group_members', 'group_invites', 'group_requests', 'friendships', 'posts', 'comments', 'post_likes', 'comment_likes']) {
       ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, (p) => handlers[t]?.(p));
     }
     ch.subscribe((status) => handlers.status?.(status));

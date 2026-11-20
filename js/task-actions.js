@@ -3,10 +3,11 @@ import { h, toast } from './util.js';
 import { openPanel, panelBar, confirmDialog } from './ui.js';
 import { card } from './cards.js';
 import { hex } from './colors.js';
-import { state, isTaskDone, setTaskDone, deleteTask, duplicateTask, myGroups, createPost, taskSnapshot } from './store.js';
+import { state, isShared, isTaskDone, setTaskDone, deleteTask, duplicateTask, myGroups, createPost, taskSnapshot } from './store.js';
 import { openTask } from './task-sheet.js';
 import { openTaskEditor } from './task-editor.js';
 import { openInvite } from './invite.js';
+import { openTogether } from './together-panel.js';
 
 const fail = (e) => toast(e?.message || 'Something went wrong');
 
@@ -34,6 +35,7 @@ export function taskItems(t) {
     { label: 'Add step', icon: 'plus', onSelect: () => openTaskEditor({ parentId: t.id }) },
     { label: 'Duplicate', icon: 'copy', onSelect: () => duplicateTask(t.id).then(() => toast('Duplicated')).catch(fail) },
     state.demo || t.parent_id ? null : { label: 'Invite friends', icon: 'user-plus', onSelect: () => openInvite('task', t) },
+    !state.demo && !t.parent_id && isShared('task', t.id) ? { label: 'Remind someone', icon: 'bell', onSelect: () => openTogether('task', t) } : null,
     state.demo ? null : { label: 'Share to a group', icon: 'send', onSelect: () => shareTask(t) },
     { label: 'Delete', icon: 'trash', danger: true, onSelect: async () => {
       if (await confirmDialog({ title: 'Delete?', message: 'This also deletes everything inside it. It cannot be undone.' })) deleteTask(t.id).catch(fail);
