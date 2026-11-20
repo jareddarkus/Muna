@@ -3,7 +3,7 @@ import { h, toast } from './util.js';
 import { icon, habitIcon } from './icons.js';
 import { COLORS, COLOR_NAMES, PALETTE, hex, colorKey } from './colors.js';
 import { openPanel, panelBar, dangerButton, toggleSwitch } from './ui.js';
-import { state, subscribe, sharesOf, saveTask, deleteTask, duplicateTask, childrenOf, descendantIds, taskPath, taskList, isTaskDone } from './store.js';
+import { state, subscribe, sharesOf, isSharedByOther, leaveSharedTask, saveTask, deleteTask, duplicateTask, childrenOf, descendantIds, taskPath, taskList, isTaskDone } from './store.js';
 import { openIconPicker } from './editor.js';
 import { openInvite } from './invite.js';
 
@@ -66,7 +66,9 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
   const inviteCount = h('span', { class: 'ver-chip', hidden: true });
   const inviteRow = h('button', { type: 'button', class: 'list-pill', onClick: async () => {
     if (!draft.title.trim()) { toast('Give it a name first.'); name.focus(); return; }
+    inviteRow.disabled = true;
     try { await persist(); openInvite('task', state.tasks.get(savedId)); } catch (e) { toast(e.message || 'Could not save'); }
+    inviteRow.disabled = false;
   } }, h('span', {}, 'Invite friends'), inviteCount, icon('chevron-right', { size: 22, stroke: 2 }));
   const paintInvites = () => { const n = savedId ? sharesOf('task', savedId).length : 0; inviteCount.hidden = !n; inviteCount.textContent = String(n); };
 
@@ -86,7 +88,9 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
   }
   unsub = subscribe(() => { if (savedId && !state.tasks.has(savedId)) { panel.close(); return; } paintSteps(); paintInvites(); });
 
-  async function persist() {
+  let persisting = null; // taps that arrive while the first save is still running wait for it (they used to create the task again)
+  const persist = () => (persisting ??= doPersist().finally(() => { persisting = null; }));
+  async function doPersist() {
     const row = { id: savedId || undefined, title: draft.title.trim(), icon: draft.icon, color: draft.color, description: draft.description.trim(), day: draft.day || null, parent_id: draft.parent };
     savedId = await saveTask(row);
     paintParent(); paintSteps();
@@ -102,7 +106,10 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
   const dup = h('button', { type: 'button', class: 'pill light block', onClick: async () => {
     try { await duplicateTask(savedId); toast('Duplicated'); panel.close(); } catch (e) { toast(e.message || 'Could not duplicate'); }
   } }, icon('copy', { size: 24, stroke: 1.8 }), 'Duplicate');
-  const del = dangerButton('Delete', 'This also deletes everything inside it. It cannot be undone.', async () => { await deleteTask(savedId); panel.close(); }, 'block');
+  const leaving = isSharedByOther(existing);
+  const del = leaving
+    ? dangerButton('Leave task', 'It stays with the person who shared it. It just disappears from your list.', async () => { await leaveSharedTask(savedId); panel.close(); }, 'block', 'Leave')
+    : dangerButton('Delete', 'This also deletes everything inside it. It cannot be undone.', async () => { await deleteTask(savedId); panel.close(); }, 'block');
   dup.hidden = del.hidden = !existing;
 
   const title = h('h2', {}, heading());
@@ -115,7 +122,7 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
       h('section', { class: 'field-card' }, h('h3', {}, 'Description'), about),
       h('section', { class: 'field-card' }, dayHead, dayInput, dayHint),
       h('section', { class: 'field-card' }, h('h3', {}, 'Belongs to'), parentRow),
-      stepsCard, state.demo || isStep() ? null : h('section', { class: 'field-card' }, h('h3', {}, 'Together'), inviteRow), save, dup, del, h('div', { class: 'spacer' })));
+      stepsCard, state.demo || isStep() || isSharedByOther(existing) ? null : h('section', { class: 'field-card' }, h('h3', {}, 'Together'), inviteRow), save, dup, del, h('div', { class: 'spacer' })));
   paintIcon(); paintParent(); paintSteps(); validate();
   if (!existing) setTimeout(() => name.focus({ preventScroll: true }), 400);
 }

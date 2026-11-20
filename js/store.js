@@ -581,8 +581,9 @@ export async function itemPeople(kind, id) {
 // ── nudges (remind someone you share a habit / task with) ──
 /** True when someone else has joined this habit / task of mine (or I joined theirs). */
 export function isShared(kind, id) {
-  const me = state.me?.id, k = kind === 'habit' ? 'habit_id' : 'task_id', c = kind === 'habit' ? 'copy_habit_id' : 'copy_task_id';
-  return state.shares.some((s) => s.status === 'accepted' && ((s.inviter_id === me && s[k] === id) || (s.invitee_id === me && s[c] === id)));
+  const me = state.me?.id;
+  if (kind === 'task') return state.shares.some((s) => s.status === 'accepted' && s.task_id === id); // one shared task, everyone edits the same one
+  return state.shares.some((s) => s.status === 'accepted' && ((s.inviter_id === me && s.habit_id === id) || (s.invitee_id === me && s.copy_habit_id === id)));
 }
 export async function nudgePerson(kind, item, uid) { await backend.sendNudge(kind, item.id, uid); }
 export async function dismissNudge(id) {
@@ -600,7 +601,7 @@ export async function refreshTogether() {
   if (togetherBusy || state.demo || state.status !== 'in' || !state.me) return;
   togetherBusy = true;
   try {
-    const items = [...habitList().filter((x) => isShared('habit', x.id)).map((x) => ['habit', x.id]), ...taskList().filter((t) => !t.parent_id && isShared('task', t.id)).map((t) => ['task', t.id])];
+    const items = habitList().filter((x) => isShared('habit', x.id)).map((x) => ['habit', x.id]); // (tasks are one shared task: nothing to compare)
     const keep = new Set(items.map((i) => i[1]));
     for (const id of [...state.together.keys()]) if (!keep.has(id)) state.together.delete(id);
     for (const [kind, id] of items) { try { state.together.set(id, await itemPeople(kind, id)); } catch {} }
@@ -609,5 +610,12 @@ export async function refreshTogether() {
 }
 setInterval(() => { if (document.visibilityState === 'visible') refreshTogether(); }, 90000);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(refreshTogether, 800); });
+/** Leave a task someone else shared with me (it stays theirs). */
+export async function leaveSharedTask(taskId) {
+  const s = state.shares.find((x) => x.task_id === taskId && x.invitee_id === state.me.id);
+  if (s) await removeShare(s.id);
+  await reload();
+}
+export const isSharedByOther = (t) => !!t && !t.parent_id && t.owner_id !== state.me?.id;
 export async function acceptFriend(id) { await backend.acceptFriend(id); await socialRefresh(); }
 export async function removeFriendship(id) { await backend.removeFriendship(id); await socialRefresh(); }

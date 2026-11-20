@@ -80,7 +80,9 @@ export function openEditor(id = null) {
   const save = h('button', { type: 'button', class: 'pill primary block', onClick: onSave }, existing ? 'Save changes' : 'Add habit');
   function validate() { save.disabled = !draft.title.trim(); }
   let savedId = existing?.id || null; // set once the habit exists (so friends can be invited before the final save)
-  async function persist() {
+  let persisting = null; // taps that arrive while the first save is still running wait for it (they used to create the habit again)
+  const persist = () => (persisting ??= doPersist().finally(() => { persisting = null; }));
+  async function doPersist() {
     const time = draft.goal_type === 'time';
     const habitId = await saveHabit({
       id: savedId || undefined, title: draft.title.trim(), icon: draft.icon, color: draft.color, goal_type: draft.goal_type,
@@ -98,7 +100,9 @@ export function openEditor(id = null) {
   const inviteCount = h('span', { class: 'ver-chip', hidden: true });
   const inviteRow = h('button', { type: 'button', class: 'list-pill', onClick: async () => {
     if (!draft.title.trim()) { toast('Give it a name first.'); name.focus(); return; }
+    inviteRow.disabled = true;
     try { await persist(); openInvite('habit', state.habits.get(savedId)); } catch (e) { toast(e.message || 'Could not save'); }
+    inviteRow.disabled = false;
   } }, h('span', {}, 'Invite friends'), inviteCount, icon('chevron-right', { size: 22, stroke: 2 }));
   const paintInvites = () => { const n = savedId ? sharesOf('habit', savedId).length : 0; inviteCount.hidden = !n; inviteCount.textContent = String(n); };
   const unsubInv = subscribe(paintInvites); paintInvites(); onEditorClose.push(unsubInv);
