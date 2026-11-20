@@ -6,6 +6,7 @@ import { openPanel, panelBar, dangerButton, toggleSwitch } from './ui.js';
 import { state, subscribe, sharesOf, isSharedByOther, leaveSharedTask, saveTask, deleteTask, duplicateTask, childrenOf, descendantIds, taskPath, taskList, isTaskDone } from './store.js';
 import { openIconPicker } from './editor.js';
 import { openInvite } from './invite.js';
+import { syncTaskCards } from './task-card.js';
 
 /** openTaskEditor({ id }) edits; openTaskEditor({ parentId?, day? }) creates a task (no parent) or a step (with a parent). */
 export function openTaskEditor({ id = null, parentId = null, day = null } = {}) {
@@ -73,13 +74,13 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
   const paintInvites = () => { const n = savedId ? sharesOf('task', savedId).length : 0; inviteCount.hidden = !n; inviteCount.textContent = String(n); };
 
   // steps
-  const stepList = h('div', { class: 'step-list edit' });
+  const stepList = h('div', { class: 'cards step-cards edit' });
   const stepsCard = h('section', { class: 'field-card' }, h('h3', {}, 'Steps'), stepList,
     h('button', { type: 'button', class: 'pill small light', onClick: addStep }, icon('plus', { size: 22, stroke: 2 }), 'Add step'));
+  const stepCards = new Map();
   function paintSteps() {
     const kids = savedId ? childrenOf(savedId) : [];
-    stepList.replaceChildren(...kids.map((k) => h('button', { type: 'button', class: `step-row ${isTaskDone(k) ? 'done' : ''}`, onClick: () => openTaskEditor({ id: k.id }) },
-      h('span', { class: 'step-ic' }, habitIcon(k.icon, 22, 1.8)), h('span', { class: 'step-name' }, k.title), icon('chevron-right', { size: 20, stroke: 2 }))));
+    syncTaskCards(stepList, kids, stepCards, (cid) => openTaskEditor({ id: cid }), { showPath: false });
     stepList.hidden = !kids.length;
   }
   async function addStep() {

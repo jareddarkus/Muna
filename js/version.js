@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.15.2';
+export const VERSION = '2.16';
 
 export const CHANGELOG = [
+  {
+    version: '2.16',
+    date: 'November 21, 2026',
+    items: ['Steps and sub-steps now look exactly like tasks: the same colored card with its icon, name, steps line and progress ring (tap the ring to tick, hold it to fill, press and hold the card for the menu). This applies inside a task and in its edit screen.'],
+  },
   {
     version: '2.15.2',
     date: 'November 21, 2026',

@@ -8,6 +8,7 @@ import { attachHold } from './hold.js';
 import { openTaskEditor } from './task-editor.js';
 import { taskItems } from './task-actions.js';
 import { togetherStrip } from './together.js';
+import { syncTaskCards } from './task-card.js';
 
 export function openTask(id) {
   if (!state.tasks.get(id)) return;
@@ -18,23 +19,13 @@ export function openTask(id) {
   const titleEl = h('span', { class: 'habit-bar-title' });
   const path = h('p', { class: 'habit-sub center' });
   const about = h('p', { class: 'task-about' });
-  const steps = h('div', { class: 'step-list' });
+  const steps = h('div', { class: 'cards step-cards' });
   const addStep = h('button', { type: 'button', class: 'pill small light', onClick: () => openTaskEditor({ parentId: id }) }, icon('plus', { size: 22, stroke: 2 }), 'Add step');
   const complete = h('button', { type: 'button', class: 'big-btn main', 'aria-label': 'Complete or reset', onClick: () => { tap(); const t = state.tasks.get(id); if (t) setTaskDone(t, !isTaskDone(t)); } }, icon('check', { size: 37.4, stroke: 3.86 }));
   panel.el.append(panelBar(panel, { left: edit, title: titleEl }),
     h('div', { class: 'panel-body center' }, path, about, steps, addStep, h('div', { class: 'habit-controls' }, complete), togetherStrip('task', id)));
 
   const rows = new Map();
-  function row(t) {
-    const box = h('button', { type: 'button', class: 'step-box', 'aria-label': 'Toggle step', onClick: (e) => { e.stopPropagation(); tap(); const c = state.tasks.get(t.id); if (c) setTaskDone(c, !isTaskDone(c)); } }, icon('check', { size: 18, stroke: 3 }));
-    const name = h('span', { class: 'step-name' });
-    const count = h('span', { class: 'step-count' });
-    const ic = h('span', { class: 'step-ic' });
-    const el = h('div', { class: 'step-row', role: 'button', tabindex: 0, onClick: () => openTask(t.id), onKeydown: (e) => { if (e.key === 'Enter') openTask(t.id); } }, box, ic, name, count);
-    const r = { el, box, name, count, ic, t, ref: null };
-    attachHold(el, () => taskItems(r.t));
-    return r;
-  }
   function update() {
     const t = state.tasks.get(id);
     if (!t) { panel.close(); return; }
@@ -47,18 +38,7 @@ export function openTask(id) {
     panel.el.classList.toggle('done', done);
     complete.style.background = done ? PALETTE.green : '';
     const kids = childrenOf(id);
-    for (const [k, r] of rows) if (!kids.some((c) => c.id === k)) { r.el.remove(); rows.delete(k); }
-    const els = kids.map((c) => {
-      let r = rows.get(c.id); if (!r) { r = row(c); rows.set(c.id, r); }
-      r.t = c;
-      r.name.textContent = c.title;
-      if (r.ref !== c.icon) { r.ref = c.icon; r.ic.replaceChildren(habitIcon(c.icon, 22, 1.8)); }
-      const sc = stepCount(c.id); r.count.textContent = sc.n ? `${Math.round(taskProgress(c.id) * 100)}%` : '';
-      r.el.classList.toggle('done', isTaskDone(c));
-      return r.el;
-    });
-    const cur = [...steps.children];
-    if (els.length !== cur.length || els.some((e, i) => e !== cur[i])) steps.replaceChildren(...els);
+    syncTaskCards(steps, kids, rows, (cid) => openTask(cid), { showPath: false }); // steps look exactly like tasks do on the Tasks tab
     steps.hidden = !kids.length;
   }
   unsub = subscribe(update);
