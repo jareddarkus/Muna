@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.14.1';
+export const VERSION = '2.14.2';
 
 export const CHANGELOG = [
+  {
+    version: '2.14.2',
+    date: 'November 21, 2026',
+    items: ['The weekday buttons in the habit editor now start on Monday (M T W T F S S), like the calendars.'],
+  },
   {
     version: '2.14.1',
     date: 'November 21, 2026',

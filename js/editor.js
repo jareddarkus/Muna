@@ -51,7 +51,7 @@ export function openEditor(id = null) {
   }
 
   // days
-  const days = h('div', { class: 'days' }, WEEKDAYS.map((l, i) => h('button', { type: 'button', class: `day ${draft.days.includes(i) ? 'on' : ''}`, 'aria-label': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][i], 'aria-pressed': draft.days.includes(i),
+  const days = h('div', { class: 'days' }, [1, 2, 3, 4, 5, 6, 0].map((i) => [WEEKDAYS[i], i]).map(([l, i]) => h('button', { type: 'button', class: `day ${draft.days.includes(i) ? 'on' : ''}`, 'aria-label': ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][i], 'aria-pressed': draft.days.includes(i),
     onClick: (e) => {
       const on = draft.days.includes(i);
       if (on && draft.days.length === 1) return;
