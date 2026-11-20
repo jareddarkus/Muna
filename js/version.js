@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.15';
+export const VERSION = '2.15.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.15.1',
+    date: 'November 21, 2026',
+    items: ['The big percentage on the Tasks tab now counts the progress inside each task: one task with half its steps done shows 50%.'],
+  },
   {
     version: '2.15',
     date: 'November 21, 2026',

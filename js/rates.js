@@ -1,5 +1,5 @@
 // The 21-day completion rate. Must stay identical to the database functions (rate_parts / pct_of / avg_pct).
-import { state, habitList, valueOf, isDone, taskList, tasksOn, effDay } from './store.js';
+import { state, habitList, valueOf, isDone, taskList, tasksOn, effDay, taskProgress } from './store.js';
 import { addDays, dow } from './util.js';
 
 export const WINDOW = 21;
@@ -57,9 +57,12 @@ export function todayProgress(day = state.viewDay) {
   return { n, done, pct: pctOf(done, n) ?? 0 };
 }
 
-/** Today screen for tasks: how many of that day's tasks are done. */
+/** Tasks tab ring: how far along that day's tasks are. A task with steps counts as far as its steps are (50% when half its steps are done). */
 export function taskDayProgress(day = state.taskDay) {
-  let n = 0, done = 0;
-  for (const t of tasksOn(day)) { n++; if (t.done_at) done++; } // this day's own section; carried-over tasks do not count
-  return { n, done, pct: pctOf(done, n) ?? 0 };
+  let n = 0, done = 0, sum = 0;
+  const idx = new Map();
+  for (const x of taskList()) if (x.parent_id) (idx.get(x.parent_id) || idx.set(x.parent_id, []).get(x.parent_id)).push(x);
+  for (const t of tasksOn(day)) { n++; const p = t.done_at ? 1 : taskProgress(t.id, idx); sum += p; if (t.done_at) done++; } // this day's own section; carried-over tasks do not count
+  const frac = n ? sum / n : 0;
+  return { n, done, frac, pct: !n ? 0 : done === n ? 100 : Math.min(99, Math.ceil(frac * 100)) };
 }
