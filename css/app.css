@@ -444,3 +444,9 @@ img { -webkit-user-drag: none; user-drag: none; }
 .invite-status.ok { color: var(--green); }
 .remind { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--blue); color: #fff; transition: transform .2s var(--ease), opacity .2s; flex: none; } .remind:active { transform: scale(.9); } .remind:disabled { opacity: .4; }
 button.together { cursor: pointer; }
+
+/* steps are listed with the same card as tasks */
+.step-cards { width: 100%; }
+.field-card .step-cards .card { background: var(--lgray); }
+.field-card .step-cards .card.done { background: var(--c); }
+.step-cards .card, .step-cards .card-text { text-align: left; }

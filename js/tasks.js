@@ -9,6 +9,7 @@ import { taskDayProgress } from './rates.js';
 import { attachHold } from './hold.js';
 import { createCalendar } from './calendar.js';
 import { openTask } from './task-sheet.js';
+import { makeTaskCard, paintTaskCard } from './task-card.js';
 import { openTaskEditor } from './task-editor.js';
 import { taskItems } from './task-actions.js';
 import { attachRingActions } from './ring-actions.js';
@@ -36,21 +37,7 @@ export function mountTasks(root) {
   root.append(cal.el, header, hero, list, empty);
 
   const cards = new Map();
-  function make(t) {
-    const c = card({ onClick: () => openTask(comp.t.id) });
-    const tr = taskRing();
-    c.slot.append(tr.el);
-    const comp = { ...c, tr, t };
-    attachHold(c.el, () => taskItems(comp.t));
-    const cur = () => state.tasks.get(comp.t.id);
-    // tap the ring: tick / untick; hold it: the circle fills and the task is completed at 100%
-    attachRingActions(tr.el, { ring: tr.ring, state: tr,
-      getProgress: () => { const x = cur(); return !x ? 0 : isTaskDone(x) ? 1 : stepCount(x.id).n ? taskProgress(x.id) : 0; },
-      isDone: () => { const x = cur(); return !x || isTaskDone(x); },
-      onTap: () => { const x = cur(); if (x) setTaskDone(x, !isTaskDone(x)).catch(() => {}); },
-      onComplete: () => { const x = cur(); if (x) setTaskDone(x, true).catch(() => {}); } });
-    return comp;
-  }
+  const make = (tk) => makeTaskCard(tk, (id) => openTask(id));
 
   function update() {
     const day = state.taskDay, isToday = day === state.today;
@@ -75,12 +62,7 @@ export function mountTasks(root) {
       for (const tk of list) {
         let c = cards.get(tk.id);
         if (!c) { c = make(tk); cards.set(tk.id, c); c.el.classList.add('enter'); c.el.addEventListener('animationend', () => c.el.classList.remove('enter'), { once: true }); }
-        c.t = tk;
-        const done = isTaskDone(tk), sc = stepCount(tk.id), path = taskPath(tk);
-        const late = !tk.day ? 'Anytime' : tk.day < day ? `Due ${shortDay(tk.day)}` : '';
-        const sub = [late, path ? `in ${path}` : '', sc.n ? `${sc.done}/${sc.n} steps` : '', togetherCue(tk.id)].filter(Boolean).join(' • ') || (tk.parent_id ? 'Step' : 'Task');
-        c.set({ color: hex(tk.color), icon: tk.icon, name: tk.title, sub, done });
-        c.tr.set(done, sc.n > 0, taskProgress(tk.id, idx), hex(tk.color));
+        const done = paintTaskCard(c, tk, { day, idx });
         (done ? finished : pending).push(c);
       }
       return { pending, finished };
