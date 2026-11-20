@@ -66,7 +66,7 @@ export function toggleSwitch(on, onChange) {
 const stack = [];
 const INTERACTIVE = 'button, a, input, select, textarea, label, summary, [role="button"], [role="switch"], [role="radio"], [role="tab"], [role="menuitem"], [tabindex]:not([tabindex="-1"]), .switch, .step-mid';
 /** tapClose: a tap on anything that isn't a control (blank space, labels, card backgrounds) closes the panel. */
-export function openPanel({ cls = '', onClose, tapClose = false, swipe = true } = {}) {
+export function openPanel({ cls = '', onClose, tapClose = false, swipe = true, backdropClose = true } = {}) {
   const backdrop = h('div', { class: 'backdrop' });
   const panel = h('div', { class: `panel ${cls}`, role: 'dialog', 'aria-modal': 'true' });
   const wrap = h('div', { class: 'panel-wrap' }, backdrop, panel);
@@ -85,7 +85,7 @@ export function openPanel({ cls = '', onClose, tapClose = false, swipe = true } 
     },
   };
   stack.push(api);
-  backdrop.addEventListener('click', () => api.close());
+  if (backdropClose) backdrop.addEventListener('click', () => api.close());
   if (swipe) enableSwipeDown(panel, backdrop, api);
   if (tapClose) panel.addEventListener('click', (e) => { if (!e.target.closest?.(INTERACTIVE)) api.close(); }, true); // capture: decide before any handler redraws the DOM
   return api;

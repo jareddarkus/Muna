@@ -16,7 +16,7 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
     : { title: '', icon: 'outline:list-check', color: parentId && state.tasks.get(parentId) ? colorKey(state.tasks.get(parentId).color) : 'purple', description: '', day: parentId ? day : day || state.taskDay, parent: parentId };
   let savedId = existing?.id || null; // set once the task exists (so steps can be added before the final save)
   let unsub = () => {};
-  const panel = openPanel({ cls: 'editor', onClose: () => unsub(), tapClose: true });
+  const panel = openPanel({ cls: 'editor', onClose: () => unsub(), backdropClose: false });
   const paintColor = () => panel.el.style.setProperty('--c', hex(draft.color));
   paintColor();
   const isStep = () => !!draft.parent;
