@@ -7,6 +7,7 @@ import { state, subscribe, childrenOf, isTaskDone, setTaskDone, stepCount, taskP
 import { attachHold } from './hold.js';
 import { openTaskEditor } from './task-editor.js';
 import { taskItems } from './task-actions.js';
+import { togetherStrip } from './together.js';
 
 export function openTask(id) {
   if (!state.tasks.get(id)) return;
@@ -21,7 +22,7 @@ export function openTask(id) {
   const addStep = h('button', { type: 'button', class: 'pill small light', onClick: () => openTaskEditor({ parentId: id }) }, icon('plus', { size: 22, stroke: 2 }), 'Add step');
   const complete = h('button', { type: 'button', class: 'big-btn main', 'aria-label': 'Complete or reset', onClick: () => { tap(); const t = state.tasks.get(id); if (t) setTaskDone(t, !isTaskDone(t)); } }, icon('check', { size: 37.4, stroke: 3.86 }));
   panel.el.append(panelBar(panel, { left: edit, title: titleEl }),
-    h('div', { class: 'panel-body center' }, path, about, steps, addStep, h('div', { class: 'habit-controls' }, complete)));
+    h('div', { class: 'panel-body center' }, path, about, steps, addStep, h('div', { class: 'habit-controls' }, complete), togetherStrip('task', id)));
 
   const rows = new Map();
   function row(t) {

@@ -3,8 +3,9 @@ import { h, toast } from './util.js';
 import { icon, habitIcon } from './icons.js';
 import { COLORS, COLOR_NAMES, PALETTE, hex, colorKey } from './colors.js';
 import { openPanel, panelBar, dangerButton, toggleSwitch } from './ui.js';
-import { state, subscribe, saveTask, deleteTask, duplicateTask, childrenOf, descendantIds, taskPath, taskList, isTaskDone } from './store.js';
+import { state, subscribe, sharesOf, saveTask, deleteTask, duplicateTask, childrenOf, descendantIds, taskPath, taskList, isTaskDone } from './store.js';
 import { openIconPicker } from './editor.js';
+import { openInvite } from './invite.js';
 
 /** openTaskEditor({ id }) edits; openTaskEditor({ parentId?, day? }) creates a task (no parent) or a step (with a parent). */
 export function openTaskEditor({ id = null, parentId = null, day = null } = {}) {
@@ -61,6 +62,14 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
     pick.el.append(panelBar(pick, { title: 'Belongs to' }), h('div', { class: 'panel-body' }, h('p', { class: 'hint center' }, 'Move it under another task or step, or make it a top-level task.'), list));
   }
 
+  // together: invite friends to this task
+  const inviteCount = h('span', { class: 'ver-chip', hidden: true });
+  const inviteRow = h('button', { type: 'button', class: 'list-pill', onClick: async () => {
+    if (!draft.title.trim()) { toast('Give it a name first.'); name.focus(); return; }
+    try { await persist(); openInvite('task', state.tasks.get(savedId)); } catch (e) { toast(e.message || 'Could not save'); }
+  } }, h('span', {}, 'Invite friends'), inviteCount, icon('chevron-right', { size: 22, stroke: 2 }));
+  const paintInvites = () => { const n = savedId ? sharesOf('task', savedId).length : 0; inviteCount.hidden = !n; inviteCount.textContent = String(n); };
+
   // steps
   const stepList = h('div', { class: 'step-list edit' });
   const stepsCard = h('section', { class: 'field-card' }, h('h3', {}, 'Steps'), stepList,
@@ -75,7 +84,7 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
     if (!draft.title.trim()) { toast('Give it a name first.'); name.focus(); return; }
     try { await persist(); openTaskEditor({ parentId: savedId }); } catch (e) { toast(e.message || 'Could not save'); }
   }
-  unsub = subscribe(() => { if (savedId && !state.tasks.has(savedId)) { panel.close(); return; } paintSteps(); });
+  unsub = subscribe(() => { if (savedId && !state.tasks.has(savedId)) { panel.close(); return; } paintSteps(); paintInvites(); });
 
   async function persist() {
     const row = { id: savedId || undefined, title: draft.title.trim(), icon: draft.icon, color: draft.color, description: draft.description.trim(), day: draft.day || null, parent_id: draft.parent };
@@ -106,7 +115,7 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
       h('section', { class: 'field-card' }, h('h3', {}, 'Description'), about),
       h('section', { class: 'field-card' }, dayHead, dayInput, dayHint),
       h('section', { class: 'field-card' }, h('h3', {}, 'Belongs to'), parentRow),
-      stepsCard, save, dup, del, h('div', { class: 'spacer' })));
+      stepsCard, state.demo || isStep() ? null : h('section', { class: 'field-card' }, h('h3', {}, 'Together'), inviteRow), save, dup, del, h('div', { class: 'spacer' })));
   paintIcon(); paintParent(); paintSteps(); validate();
   if (!existing) setTimeout(() => name.focus({ preventScroll: true }), 400);
 }

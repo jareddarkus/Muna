@@ -6,6 +6,7 @@ import { hex } from './colors.js';
 import { state, valueOf, setValue, deleteHabit, myGroups, createPost } from './store.js';
 import { openHabit } from './habit.js';
 import { openEditor } from './editor.js';
+import { openInvite } from './invite.js';
 
 const fail = (e) => toast(e?.message || 'Something went wrong');
 
@@ -32,6 +33,7 @@ export function habitItems(hb, { day = state.viewDay, extra = [] } = {}) {
     { label: 'Log', icon: 'circle-check', onSelect: () => openHabit(hb.id, day) },
     ...extra,
     { label: 'Edit', icon: 'pencil', onSelect: () => openEditor(hb.id) },
+    state.demo ? null : { label: 'Invite friends', icon: 'user-plus', onSelect: () => openInvite('habit', hb) },
     state.demo ? null : { label: 'Share to a group', icon: 'send', onSelect: () => shareHabit(hb) },
     v > 0 ? { label: 'Reset this day', icon: 'refresh', onSelect: () => setValue(hb, 0, day) } : null,
     { label: 'Delete', icon: 'trash', danger: true, onSelect: async () => {
