@@ -1,7 +1,7 @@
 // App state, selectors and actions. UI never talks to Supabase directly.
 import { remote } from './backend-remote.js';
 import { demo } from './backend-demo.js';
-import { todayStr, addDays, dow, diffDays, uuid, clamp, haptic } from './util.js';
+import { todayStr, addDays, dow, diffDays, uuid, clamp, haptic, ymd } from './util.js';
 
 export const HISTORY_DAYS = 400;
 export const state = {
@@ -66,11 +66,25 @@ export const taskList = () => [...state.tasks.values()].sort((a, b) => (a.create
 export const childrenOf = (id) => taskList().filter((t) => t.parent_id === id);
 export const isTaskDone = (t) => !!t.done_at;
 /** Tasks, steps and sub-steps due on `day` (today also lists unfinished ones from earlier days). */
-export const tasksOn = (day) => {
-  const all = taskList();
-  const late = day === state.today ? all.filter((t) => t.day && t.day < day && !t.done_at) : []; // unfinished tasks carry over to today
-  return [...late.sort((x, y) => (x.day < y.day ? -1 : x.day > y.day ? 1 : 0)), ...all.filter((t) => t.day === day)];
-};
+const localDay = (iso) => ymd(new Date(iso));
+/** The day a task counts for: its own day, or (when it has none) the day it was finished. */
+export const effDay = (t) => t.day || (t.done_at ? localDay(t.done_at) : null);
+/**
+ * What the Tasks tab shows for a day, in two sections:
+ *  due      – tasks scheduled for that day (and, on past days, undated tasks finished that day)
+ *  carried  – only when looking at today: unfinished tasks from earlier days, and tasks with no date;
+ *             anything finished today stays here (done) until tomorrow
+ */
+export function taskSections(day) {
+  const all = taskList(), today = state.today;
+  const due = all.filter((t) => t.day === day || (!t.day && day !== today && t.done_at && localDay(t.done_at) === day));
+  if (day !== today) return { due, carried: [] };
+  const doneToday = (t) => t.done_at && localDay(t.done_at) === today;
+  const carried = all.filter((t) => (t.day ? t.day < today : !t.parent_id) && (!t.done_at || doneToday(t)))
+    .sort((x, y) => (x.day || '9999') < (y.day || '9999') ? -1 : (x.day || '9999') > (y.day || '9999') ? 1 : 0);
+  return { due, carried };
+}
+export const tasksOn = (day) => taskSections(day).due;
 /** Every id below a task (so a task can never be moved into itself). */
 export function descendantIds(id) {
   const out = new Set(), walk = (x) => { for (const c of state.tasks.values()) if (c.parent_id === x && !out.has(c.id)) { out.add(c.id); walk(c.id); } };

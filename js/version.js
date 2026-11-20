@@ -1,7 +1,15 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.11';
+export const VERSION = '2.12';
 
 export const CHANGELOG = [
+  {
+    version: '2.12',
+    date: 'November 20, 2026',
+    items: [
+      'Tasks tab: the day\'s tasks come first, and a Carried over section sits below them. It holds unfinished tasks from earlier days and tasks with no date, until you finish them.',
+      'A task (or step) can now have no day: switch Day off in its edit screen. It shows under Carried over every day as Anytime.',
+    ],
+  },
   {
     version: '2.11',
     date: 'November 19, 2026',

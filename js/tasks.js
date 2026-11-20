@@ -4,7 +4,7 @@ import { icon } from './icons.js';
 import { PALETTE, hex } from './colors.js';
 import { ring } from './ui.js';
 import { card, taskRing } from './cards.js';
-import { state, subscribe, tasksOn, taskList, isTaskDone, setTaskDone, setTaskDay, shiftTaskDay, stepCount, taskPath, taskProgress, HISTORY_DAYS, MAX_AHEAD } from './store.js';
+import { state, subscribe, taskSections, taskList, isTaskDone, setTaskDone, setTaskDay, shiftTaskDay, stepCount, taskPath, taskProgress, HISTORY_DAYS, MAX_AHEAD } from './store.js';
 import { taskDayProgress } from './rates.js';
 import { attachHold } from './hold.js';
 import { createCalendar } from './calendar.js';
@@ -30,6 +30,8 @@ export function mountTasks(root) {
   const hero = h('section', { class: 'hero' }, r.el, h('div', { class: 'hero-center' }, num, h('span', { class: 'hero-unit' }, '%')));
   const list = h('div', { class: 'cards' });
   const divider = h('div', { class: 'divider' });
+  const dividerCarried = h('div', { class: 'divider' });
+  const carriedTitle = h('p', { class: 'list-title carried-title' }, 'Carried over');
   const empty = h('p', { class: 'empty-text' }, 'No tasks');
   root.append(cal.el, header, hero, list, empty);
 
@@ -52,7 +54,7 @@ export function mountTasks(root) {
 
   function update() {
     const day = state.taskDay, isToday = day === state.today;
-    const all = tasksOn(day);
+    const { due, carried } = taskSections(day), all = [...due, ...carried];
     title.textContent = isToday ? 'Today' : shortDay(day);
     title.classList.toggle('away', !isToday);
     title.setAttribute('aria-expanded', String(cal.isOpen));
@@ -66,20 +68,27 @@ export function mountTasks(root) {
 
     const before = new Map([...cards].map(([id, c]) => [id, c.el.getBoundingClientRect().top]));
     for (const [id, c] of cards) if (!all.some((x) => x.id === id)) { c.el.remove(); cards.delete(id); }
-    const pending = [], finished = [], idx = new Map();
+    const idx = new Map();
     for (const x of taskList()) if (x.parent_id) (idx.get(x.parent_id) || idx.set(x.parent_id, []).get(x.parent_id)).push(x);
-    for (const tk of all) {
-      let c = cards.get(tk.id);
-      if (!c) { c = make(tk); cards.set(tk.id, c); c.el.classList.add('enter'); c.el.addEventListener('animationend', () => c.el.classList.remove('enter'), { once: true }); }
-      c.t = tk;
-      const done = isTaskDone(tk), sc = stepCount(tk.id), path = taskPath(tk);
-      const late = !done && tk.day < day ? `Due ${shortDay(tk.day)}` : '';
-      const sub = [late, path ? `in ${path}` : '', sc.n ? `${sc.done}/${sc.n} steps` : ''].filter(Boolean).join(' • ') || (tk.parent_id ? 'Step' : 'Task');
-      c.set({ color: hex(tk.color), icon: tk.icon, name: tk.title, sub, done });
-      c.tr.set(done, sc.n > 0, taskProgress(tk.id, idx), hex(tk.color));
-      (done ? finished : pending).push(c);
-    }
-    const order = [...pending.map((c) => c.el), ...(pending.length && finished.length ? [divider] : []), ...finished.map((c) => c.el)];
+    const build = (list) => {
+      const pending = [], finished = [];
+      for (const tk of list) {
+        let c = cards.get(tk.id);
+        if (!c) { c = make(tk); cards.set(tk.id, c); c.el.classList.add('enter'); c.el.addEventListener('animationend', () => c.el.classList.remove('enter'), { once: true }); }
+        c.t = tk;
+        const done = isTaskDone(tk), sc = stepCount(tk.id), path = taskPath(tk);
+        const late = !tk.day ? 'Anytime' : tk.day < day ? `Due ${shortDay(tk.day)}` : '';
+        const sub = [late, path ? `in ${path}` : '', sc.n ? `${sc.done}/${sc.n} steps` : ''].filter(Boolean).join(' • ') || (tk.parent_id ? 'Step' : 'Task');
+        c.set({ color: hex(tk.color), icon: tk.icon, name: tk.title, sub, done });
+        c.tr.set(done, sc.n > 0, taskProgress(tk.id, idx), hex(tk.color));
+        (done ? finished : pending).push(c);
+      }
+      return { pending, finished };
+    };
+    const A = build(due), B = build(carried);
+    // section 1: this day's tasks (to do, divider, done). section 2: carried over (to do first, done below)
+    const order = [...A.pending.map((c) => c.el), ...(A.pending.length && A.finished.length ? [divider] : []), ...A.finished.map((c) => c.el),
+      ...(carried.length ? [...(due.length ? [dividerCarried] : []), carriedTitle, ...B.pending.map((c) => c.el), ...B.finished.map((c) => c.el)] : [])];
     const cur = [...list.children];
     if (order.length !== cur.length || order.some((el, i) => el !== cur[i])) list.replaceChildren(...order);
     for (const [id, c] of cards) {

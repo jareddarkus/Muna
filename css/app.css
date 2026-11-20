@@ -422,3 +422,4 @@ img { -webkit-user-drag: none; user-drag: none; }
 
 .gsi { display: grid; justify-items: center; min-height: 40px; color-scheme: light; } .gsi:empty { display: none; }
 .login-actions .link { font-size: 14px; color: var(--dgray); }
+.carried-title { margin: 6px 10px 2px; }
