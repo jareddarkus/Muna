@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.14';
+export const VERSION = '2.14.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.14.1',
+    date: 'November 21, 2026',
+    items: ['The create / edit screens (habit, task, group) no longer close when you tap empty space or the dimmed area, so nothing typed is lost by accident. Close them with the X or by swiping down.'],
+  },
   {
     version: '2.14',
     date: 'November 21, 2026',

@@ -17,7 +17,7 @@ export function openEditor(id = null) {
     : { title: '', icon: 'outline:star', color: 'purple', goal_type: 'count', unit: '', days: [0, 1, 2, 3, 4, 5, 6], minutes: 30, count: 5, start: state.today, remind: '' };
 
   const onEditorClose = [];
-  const panel = openPanel({ cls: 'editor', tapClose: true, onClose: () => onEditorClose.forEach((f) => f()) });
+  const panel = openPanel({ cls: 'editor', backdropClose: false, onClose: () => onEditorClose.forEach((f) => f()) });
   const paint = () => panel.el.style.setProperty('--c', hex(draft.color));
   paint();
 

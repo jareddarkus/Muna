@@ -150,7 +150,7 @@ export function mountSocial(root) {
 export function openCreateGroup() {
   if (state.demo) { toast('Sign in with Google to create groups.'); return; }
   const draft = { name: '', description: '', icon: 'outline:users', color: 'purple', is_public: true };
-  const panel = openPanel({ cls: 'editor', tapClose: true });
+  const panel = openPanel({ cls: 'editor', backdropClose: false });
   const paint = () => panel.el.style.setProperty('--c', hex(draft.color));
   paint();
   const circle = h('button', { type: 'button', class: 'name-circle', 'aria-label': 'Choose icon', onClick: () => openIconPicker(draft, (ref) => { draft.icon = ref; paintIcon(); }) });

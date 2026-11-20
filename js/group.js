@@ -218,7 +218,7 @@ function openComments(post, gid) {
 // ───────────── admin tools ─────────────
 export function openGroupAdmin(gid) {
   let unsub = () => {};
-  const panel = openPanel({ cls: 'editor', onClose: () => unsub(), tapClose: true });
+  const panel = openPanel({ cls: 'editor', onClose: () => unsub(), backdropClose: false });
   const g = state.groups.get(gid);
   const draft = { name: g.name, description: g.description, icon: g.icon, color: g.color, is_public: g.is_public };
   const paint = () => panel.el.style.setProperty('--c', hex(draft.color));
