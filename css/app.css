@@ -454,5 +454,6 @@ button.together { cursor: pointer; }
 .tg-list { display: grid; gap: 8px; width: 100%; }
 .tg-row { display: flex; align-items: center; gap: 10px; text-align: left; } .tg-row.pending { opacity: .5; }
 .tg-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 15px; }
+.tg-ring { position: relative; width: 44px; height: 44px; display: grid; place-items: center; } .tg-ring .ring { position: absolute; inset: 0; } .tg-check { position: relative; color: var(--green); display: grid; }
 .tg-val { font-size: 15px; color: var(--dgray); font-variant-numeric: tabular-nums; } .tg-val.ok { color: var(--green); }
 .together { width: 100%; }

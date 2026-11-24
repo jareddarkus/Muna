@@ -1,7 +1,8 @@
 // "Together" strip on a habit / task screen: everyone in it and how far they are today (count or time).
 import { h } from './util.js';
 import { icon } from './icons.js';
-import { avatar } from './ui.js';
+import { avatar, ring } from './ui.js';
+import { hex } from './colors.js';
 import { state, itemPeople, profileOf } from './store.js';
 import { openTogether } from './together-panel.js';
 
@@ -11,6 +12,15 @@ export function progressText(r) {
   if (r.value == null) return r.done ? 'Done' : '';
   if (r.goal_type === 'time') return `${Math.floor(r.value / 60)} of ${Math.round(r.target / 60)} min`;
   return `${r.value} of ${r.target}${r.unit ? ` ${r.unit}` : ''}`;
+}
+
+/** Their progress as a small ring (a check inside once they are done); "Invited" until they accept. */
+function personRing(r, hb) {
+  if (r.status === 'pending') return h('span', { class: 'tg-val' }, 'Invited');
+  const rg = ring({ size: 44, stroke: 6, color: hex(hb?.color || 'green') });
+  const p = r.done ? 1 : r.value != null && r.target ? Math.min(1, r.value / r.target) : 0;
+  rg.set(p);
+  return h('span', { class: `tg-ring ${r.done ? 'ok' : ''}`, title: progressText(r), 'aria-label': progressText(r) }, rg.el, r.done ? h('span', { class: 'tg-check' }, icon('check', { size: 18, stroke: 3.2 })) : null);
 }
 
 const seen = new Map(); // item id -> last list of people (so the strip is there the moment the screen opens)
@@ -27,8 +37,8 @@ export function togetherStrip(kind, id) {
         ? h('div', { class: 'tg-list' }, others.map((r) => {
           const p = profileOf(r.user_id);
           return h('div', { class: `tg-row ${r.status === 'pending' ? 'pending' : ''}` },
-            h('span', { class: 'tg' }, avatar(p, 34), r.done ? h('span', { class: 'tg-done' }, icon('check', { size: 12, stroke: 3.5 })) : null),
-            h('span', { class: 'tg-name' }, `@${p.username}`), h('span', { class: `tg-val ${r.done ? 'ok' : ''}` }, progressText(r)));
+            h('span', { class: 'tg' }, avatar(p, 34)),
+            h('span', { class: 'tg-name' }, `@${p.username}`), personRing(r, state.habits.get(id)));
         }))
         : h('div', { class: 'avatars' }, others.map((r) => h('span', { class: `tg ${r.status === 'pending' ? 'pending' : ''}`, title: `@${profileOf(r.user_id).username}` }, avatar(profileOf(r.user_id), 38)))),
       h('p', { class: 'hint' }, kind === 'task' ? 'Shared: everyone sees changes live' : 'Tap to remind someone'));
