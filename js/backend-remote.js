@@ -183,7 +183,7 @@ export const remote = {
   async inviteShare(rows) { check(await sb.from('shares').insert(rows)); },
   async removeShare(id) { check(await sb.from('shares').delete().eq('id', id)); },
   async respondShare(id, accept) { check(await sb.rpc('respond_share', { sid: id, accept })); },
-  async habitPeople(id) { return check(await sb.rpc('habit_people', { item: id })); },
+  async habitPeople(id) { return check(await sb.rpc('habit_progress', { item: id })); },
   async taskPeople(id) { return check(await sb.rpc('task_people', { item: id })); },
   /** Creates the nudge (the database checks who may nudge whom) and then asks the push function to deliver it. */
   async sendNudge(kind, item, target) {

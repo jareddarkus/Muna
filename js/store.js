@@ -180,6 +180,7 @@ function hydrate(b) {
   state.habits = new Map(b.habits.map((x) => [x.id, x]));
   state.tasks = new Map((b.tasks || []).map((x) => [x.id, x]));
   state.logs = new Map(b.logs.map((l) => [logKey(l.habit_id, l.user_id, l.day), l.value]));
+  for (const [k, v] of unsaved) state.logs.set(k, v); // a refresh must not undo a tap that is still on its way to the server
   state.profiles = new Map(b.profiles.map((p) => [p.id, p]));
   applySocial(b);
   state.reminders = new Map((b.reminders || []).map((r) => [r.habit_id, String(r.remind_at).slice(0, 5)]));
@@ -256,7 +257,7 @@ export async function signOut() {
   await backend.signOut();
   if (state.me && !wasDemo) localStorage.removeItem(`muna.cache.${state.me.id}`);
   state.me = null; state.status = 'out'; state.demo = false; backend = remote;
-  state.habits.clear(); state.tasks.clear(); state.logs.clear(); state.groups.clear(); state.members = []; state.friendships = []; state.invites = []; state.requests = []; state.shares = []; state.nudges = []; state.together.clear();
+  state.habits.clear(); state.tasks.clear(); state.logs.clear(); state.groups.clear(); state.members = []; state.friendships = []; state.invites = []; state.requests = []; state.shares = []; state.nudges = []; state.together.clear(); unsaved.clear();
   emit();
 }
 
@@ -281,7 +282,7 @@ function realtimeHandlers() {
     habit_logs: (p) => {
       const r = p.eventType === 'DELETE' ? p.old : p.new;
       const k = logKey(r.habit_id, r.user_id, r.day);
-      if (pending.has(k)) return; // our own write is in flight; don't let its echo flicker the UI
+      if (r.user_id === state.me.id && (pending.has(k) || unsaved.has(k) || Date.now() - (recentOwn.get(k) || 0) < 5000)) return; // our own write (or its late echo): our value is the newest
       if (p.eventType === 'DELETE') state.logs.delete(k); else state.logs.set(k, r.value);
       if (r.user_id !== state.me.id) ensureProfiles([r.user_id]);
       emit();
@@ -327,13 +328,15 @@ setInterval(() => { if (state.status === 'in') { const before = state.today; rol
 
 // ───────────── actions (optimistic) ─────────────
 const pending = new Map(); // log key -> timer
+const unsaved = new Map(); // log key -> value the server has not confirmed yet (kept through reloads)
+const recentOwn = new Map(); // log key -> when our last save finished (to ignore its late echo)
 const offlineGuard = (p) => p.catch((e) => { console.error(e); state.online = false; emit(); throw e; });
 
 export function setValue(habit, value, day = state.today) {
   value = clamp(Math.round(value), 0, 86400 * 2);
   const k = logKey(habit.id, state.me.id, day);
   if ((state.logs.get(k) ?? 0) < habit.target && value >= habit.target) haptic('success'); // goal reached
-  state.logs.set(k, value);
+  state.logs.set(k, value); unsaved.set(k, value);
   emit();
   clearTimeout(pending.get(k));
   const t = setTimeout(async () => {
@@ -341,7 +344,7 @@ export function setValue(habit, value, day = state.today) {
     let failed = false;
     try { await backend.saveLog({ habit_id: habit.id, user_id: state.me.id, day, value: v }); state.online = true; }
     catch (e) { console.error(e); state.online = false; failed = true; }
-    if (pending.get(k) === t) pending.delete(k); // otherwise a newer edit is already queued
+    if (pending.get(k) === t) { pending.delete(k); if (!failed && state.logs.get(k) === v) unsaved.delete(k); recentOwn.set(k, Date.now()); } // otherwise a newer edit is already queued
     if (failed && !pending.has(k)) pending.set(k, setTimeout(() => { pending.delete(k); if (state.logs.has(k)) setValue(habit, state.logs.get(k), day); }, 5000));
     emit();
   }, 280);
