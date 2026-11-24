@@ -1,7 +1,15 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.16';
+export const VERSION = '2.17';
 
 export const CHANGELOG = [
+  {
+    version: '2.17',
+    date: 'November 24, 2026',
+    items: [
+      'Shared habits: the habit screen now shows how far everyone is today, in their own unit (for example "2 of 5", or "25 of 30 min"), and a green check for those who are done.',
+      'Fixed: a +1 you had just tapped could be undone when the app refreshed in the background before it was saved (it looked like the count went back by one). Taps that are still on their way to the server are now always kept.',
+    ],
+  },
   {
     version: '2.16',
     date: 'November 21, 2026',
