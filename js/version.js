@@ -1,7 +1,12 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.18';
+export const VERSION = '2.18.1';
 
 export const CHANGELOG = [
+  {
+    version: '2.18.1',
+    date: 'November 24, 2026',
+    items: ['Shared habits: you now see the other person\'s progress as a small ring (with a check once they are done) instead of "3 of 3".'],
+  },
   {
     version: '2.18',
     date: 'November 24, 2026',
