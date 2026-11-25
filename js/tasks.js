@@ -1,10 +1,10 @@
 // Tasks tab: looks and works like Today, but for one-off tasks (steps and sub-steps live inside each task).
-import { h, tween, shortDay, addDays, parseDay, ymd, tap } from './util.js';
+import { h, tween, shortDay, addDays, parseDay, ymd, tap, toast } from './util.js';
 import { icon } from './icons.js';
 import { PALETTE, hex } from './colors.js';
 import { ring, segmented } from './ui.js';
 import { card, taskRing } from './cards.js';
-import { state, subscribe, taskSections, anytimeTasks, projectTasks, setTasksTab, taskList, isTaskDone, setTaskDone, setTaskDay, shiftTaskDay, stepCount, taskPath, taskProgress, togetherCue, HISTORY_DAYS, MAX_AHEAD } from './store.js';
+import { state, subscribe, taskSections, anytimeTasks, projectTasks, setTasksTab, saveTask, taskList, isTaskDone, setTaskDone, setTaskDay, shiftTaskDay, stepCount, taskPath, taskProgress, togetherCue, HISTORY_DAYS, MAX_AHEAD } from './store.js';
 import { taskDayProgress } from './rates.js';
 import { attachHold } from './hold.js';
 import { createCalendar } from './calendar.js';
@@ -12,6 +12,7 @@ import { openTask } from './task-sheet.js';
 import { makeTaskCard, paintTaskCard } from './task-card.js';
 import { openTaskEditor } from './task-editor.js';
 import { taskItems } from './task-actions.js';
+import { createTimeline } from './timeline.js';
 import { attachRingActions } from './ring-actions.js';
 
 export function mountTasks(root) {
@@ -54,11 +55,15 @@ export function mountTasks(root) {
   const num = h('span', { class: 'hero-num' }, '0');
   const hero = h('section', { class: 'hero' }, r.el, h('div', { class: 'hero-center' }, num, h('span', { class: 'hero-unit' }, '%')));
   const list = h('div', { class: 'cards' });
+  const listCarried = h('div', { class: 'cards' });
+  const timeline = createTimeline({ scroller: root,
+    onMove: (id, time) => saveTask({ id, due_time: time }).catch((e) => toast(e?.message || 'Could not move it')),
+    onCreate: (time) => openTaskEditor({ day: state.taskDay, time }) });
   const divider = h('div', { class: 'divider' });
   const dividerCarried = h('div', { class: 'divider' });
   const carriedTitle = h('p', { class: 'list-title carried-title' }, 'Carried over');
   const empty = h('p', { class: 'empty-text' }, 'No tasks');
-  root.append(cal.el, header, segWrap, week, hero, list, empty);
+  root.append(cal.el, header, segWrap, week, hero, list, timeline.el, listCarried, empty);
 
   const cards = new Map();
   const make = (tk) => makeTaskCard(tk, (id) => openTask(id));
@@ -105,23 +110,29 @@ export function mountTasks(root) {
       }
       return { pending, finished };
     };
-    const A = build(due), B = build(carried);
-    // section 1: this day's tasks (to do, divider, done). section 2: carried over (to do first, done below)
-    const order = [...A.pending.map((c) => c.el), ...(A.pending.length && A.finished.length ? [divider] : []), ...A.finished.map((c) => c.el),
-      ...(carried.length ? [...(due.length ? [dividerCarried] : []), carriedTitle, ...B.pending.map((c) => c.el), ...B.finished.map((c) => c.el)] : [])];
-    const cur = [...list.children];
-    if (order.length !== cur.length || order.some((el, i) => el !== cur[i])) list.replaceChildren(...order);
+    const timed = isDay ? due.filter((x) => x.due_time) : [], untimed = isDay ? due.filter((x) => !x.due_time) : due;
+    const A = build(untimed), B = build(carried), T = build(timed);
+    const tcards = [...T.pending, ...T.finished];
+    tcards.forEach((c) => { c.timed = true; });
+    // this day's tasks without a time (to do, divider, done), then the hours, then carried over (to do first, done below)
+    const order = [...A.pending.map((c) => c.el), ...(A.pending.length && A.finished.length ? [divider] : []), ...A.finished.map((c) => c.el)];
+    const orderCarried = carried.length ? [...(due.length ? [dividerCarried] : []), carriedTitle, ...B.pending.map((c) => c.el), ...B.finished.map((c) => c.el)] : [];
+    const sync = (host, els) => { const cur = [...host.children]; if (els.length !== cur.length || els.some((el, i) => el !== cur[i])) host.replaceChildren(...els); };
+    sync(list, order); sync(listCarried, orderCarried);
+    timeline.el.hidden = !isDay;
+    if (isDay) timeline.render(timed.map((tk) => ({ tk, c: cards.get(tk.id) })), { isToday });
     for (const [id, c] of cards) {
       const was = before.get(id);
-      if (was == null || c.el.classList.contains('enter')) continue;
+      if (was == null || c.timed || c.el.classList.contains('enter')) continue;
       const dy = was - c.el.getBoundingClientRect().top;
       if (Math.abs(dy) > 1) {
         c.el.style.transition = 'none'; c.el.style.transform = `translateY(${dy}px)`;
         requestAnimationFrame(() => requestAnimationFrame(() => { c.el.style.transition = ''; c.el.style.transform = ''; }));
       }
     }
-    empty.hidden = all.length > 0;
-    list.hidden = all.length === 0;
+    empty.hidden = isDay || all.length > 0;
+    list.hidden = !untimed.length;
+    listCarried.hidden = !carried.length;
   }
   subscribe(update);
   update();

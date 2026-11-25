@@ -1,9 +1,9 @@
 // Offline support. Code is fetched network-first (so updates always win), icons and vendor files cache-first.
-const CACHE = 'muna-v2.19';
+const CACHE = 'muna-v2.20';
 const SHELL = ['./', 'index.html', 'css/app.css', 'manifest.webmanifest', 'vendor/supabase.js', 'assets/icon.svg',
   'js/main.js', 'js/config.js', 'js/util.js', 'js/colors.js', 'js/icons.js', 'js/ui-icons.js', 'js/ui.js', 'js/store.js', 'js/rates.js', 'js/cards.js',
   'js/backend-remote.js', 'js/backend-demo.js', 'js/timer.js', 'js/home.js', 'js/habit.js', 'js/editor.js', 'js/reports.js', 'js/social.js', 'js/group.js',
-  'js/profile.js', 'js/hold.js', 'js/calendar.js', 'js/task-card.js', 'js/together-panel.js', 'js/invite.js', 'js/together.js', 'js/google-signin.js', 'js/theme.js', 'js/ring-actions.js', 'js/tasks.js', 'js/task-sheet.js', 'js/task-editor.js', 'js/task-actions.js', 'js/habit-actions.js', 'js/account.js', 'js/cropper.js', 'js/version.js', 'js/push.js', 'js/updates.js',
+  'js/profile.js', 'js/hold.js', 'js/calendar.js', 'js/task-card.js', 'js/together-panel.js', 'js/invite.js', 'js/together.js', 'js/google-signin.js', 'js/theme.js', 'js/ring-actions.js', 'js/tasks.js', 'js/timeline.js', 'js/task-sheet.js', 'js/task-editor.js', 'js/task-actions.js', 'js/habit-actions.js', 'js/account.js', 'js/cropper.js', 'js/version.js', 'js/push.js', 'js/updates.js',
   'fonts/lexend-latin-400.woff2', 'fonts/lexend-latin-700.woff2'];
 
 self.addEventListener('install', (e) => {

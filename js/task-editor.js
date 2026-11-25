@@ -9,12 +9,12 @@ import { openInvite } from './invite.js';
 import { syncTaskCards } from './task-card.js';
 
 /** openTaskEditor({ id }) edits; openTaskEditor({ parentId?, day? }) creates a task (no parent) or a step (with a parent). */
-export function openTaskEditor({ id = null, parentId = null, day = null, anytime = false, project = false } = {}) {
+export function openTaskEditor({ id = null, parentId = null, day = null, time = null, anytime = false, project = false } = {}) {
   const existing = id ? state.tasks.get(id) : null;
   if (id && !existing) return;
   const draft = existing
     ? { title: existing.title, icon: existing.icon, color: colorKey(existing.color), description: existing.description || '', day: existing.day, time: existing.due_time || null, project: !!existing.project, parent: existing.parent_id }
-    : { title: '', icon: 'outline:list-check', color: parentId && state.tasks.get(parentId) ? colorKey(state.tasks.get(parentId).color) : 'purple', description: '', day: parentId ? day : anytime ? null : day || state.taskDay, time: null, project: !parentId && project, parent: parentId };
+    : { title: '', icon: 'outline:list-check', color: parentId && state.tasks.get(parentId) ? colorKey(state.tasks.get(parentId).color) : 'purple', description: '', day: parentId ? day : anytime ? null : day || state.taskDay, time: parentId ? null : time, project: !parentId && project, parent: parentId };
   let savedId = existing?.id || null; // set once the task exists (so steps can be added before the final save)
   let unsub = () => {};
   const panel = openPanel({ cls: 'editor', onClose: () => unsub(), backdropClose: false });
