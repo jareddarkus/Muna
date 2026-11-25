@@ -1,7 +1,15 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.19';
+export const VERSION = '2.20';
 
 export const CHANGELOG = [
+  {
+    version: '2.20',
+    date: 'November 25, 2026',
+    items: [
+      'Day tab: a real timetable. Hours down the side with soft lines, and every task with a time sits at its hour (a red line shows the time now). Tasks without a time stay in a list above it.',
+      'Drag the small time chip on the left of a task up or down to move it, in 15-minute steps (it buzzes at each step). Tap an empty spot to add a task at that time.',
+    ],
+  },
   {
     version: '2.19',
     date: 'November 25, 2026',
