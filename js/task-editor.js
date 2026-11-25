@@ -9,12 +9,12 @@ import { openInvite } from './invite.js';
 import { syncTaskCards } from './task-card.js';
 
 /** openTaskEditor({ id }) edits; openTaskEditor({ parentId?, day? }) creates a task (no parent) or a step (with a parent). */
-export function openTaskEditor({ id = null, parentId = null, day = null } = {}) {
+export function openTaskEditor({ id = null, parentId = null, day = null, anytime = false, project = false } = {}) {
   const existing = id ? state.tasks.get(id) : null;
   if (id && !existing) return;
   const draft = existing
-    ? { title: existing.title, icon: existing.icon, color: colorKey(existing.color), description: existing.description || '', day: existing.day, parent: existing.parent_id }
-    : { title: '', icon: 'outline:list-check', color: parentId && state.tasks.get(parentId) ? colorKey(state.tasks.get(parentId).color) : 'purple', description: '', day: parentId ? day : day || state.taskDay, parent: parentId };
+    ? { title: existing.title, icon: existing.icon, color: colorKey(existing.color), description: existing.description || '', day: existing.day, time: existing.due_time || null, project: !!existing.project, parent: existing.parent_id }
+    : { title: '', icon: 'outline:list-check', color: parentId && state.tasks.get(parentId) ? colorKey(state.tasks.get(parentId).color) : 'purple', description: '', day: parentId ? day : anytime ? null : day || state.taskDay, time: null, project: !parentId && project, parent: parentId };
   let savedId = existing?.id || null; // set once the task exists (so steps can be added before the final save)
   let unsub = () => {};
   const panel = openPanel({ cls: 'editor', onClose: () => unsub(), backdropClose: false });
@@ -40,8 +40,18 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
   function paintDay() {
     dayInput.hidden = !draft.day; dayOn.set(!!draft.day);
     dayHint.hidden = !!draft.day;
+    timeCard.hidden = !draft.day; timeInput.hidden = !draft.time; timeOn.set(!!draft.time);
+    projectCard.hidden = isStep();
     dayHint.textContent = isStep() ? 'No day: it just lives inside its task.' : 'No day: it shows on Today every day, under Carried over, until you finish it.';
   }
+
+  // time of day (only with a day)
+  const timeInput = h('input', { class: 'pill-input date-input', type: 'time', value: draft.time || '09:00', 'aria-label': 'Time', onChange: (e) => { draft.time = e.target.value || null; } });
+  const timeOn = toggleSwitch(!!draft.time, (on, api) => { api.set(on); draft.time = on ? timeInput.value || '09:00' : null; paintDay(); });
+  const timeCard = h('section', { class: 'field-card' }, h('div', { class: 'row-between' }, h('h3', {}, 'Time'), timeOn.el), timeInput);
+  // project: shows in the Projects tab
+  const projectOn = toggleSwitch(draft.project, (on, api) => { api.set(on); draft.project = on; });
+  const projectCard = h('section', { class: 'field-card' }, h('div', { class: 'row-between' }, h('h3', {}, 'Project'), projectOn.el), h('p', { class: 'hint' }, 'Shows in the Projects tab, where you follow how far its steps are.'));
 
   // parent
   const parentLabel = h('span', {});
@@ -92,7 +102,7 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
   let persisting = null; // taps that arrive while the first save is still running wait for it (they used to create the task again)
   const persist = () => (persisting ??= doPersist().finally(() => { persisting = null; }));
   async function doPersist() {
-    const row = { id: savedId || undefined, title: draft.title.trim(), icon: draft.icon, color: draft.color, description: draft.description.trim(), day: draft.day || null, parent_id: draft.parent };
+    const row = { id: savedId || undefined, title: draft.title.trim(), icon: draft.icon, color: draft.color, description: draft.description.trim(), day: draft.day || null, due_time: draft.day ? draft.time : null, project: isStep() ? false : draft.project, parent_id: draft.parent };
     savedId = await saveTask(row);
     paintParent(); paintSteps();
   }
@@ -121,7 +131,7 @@ export function openTaskEditor({ id = null, parentId = null, day = null } = {}) 
       h('div', { class: 'name-pill' }, circle, name),
       h('section', { class: 'field-card' }, h('h3', {}, 'Color'), swatches),
       h('section', { class: 'field-card' }, h('h3', {}, 'Description'), about),
-      h('section', { class: 'field-card' }, dayHead, dayInput, dayHint),
+      h('section', { class: 'field-card' }, dayHead, dayInput, dayHint), timeCard, projectCard,
       h('section', { class: 'field-card' }, h('h3', {}, 'Belongs to'), parentRow),
       stepsCard, state.demo || isStep() || isSharedByOther(existing) ? null : h('section', { class: 'field-card' }, h('h3', {}, 'Together'), inviteRow), save, dup, del, h('div', { class: 'spacer' })));
   paintIcon(); paintParent(); paintSteps(); validate();

@@ -34,8 +34,8 @@ export const taskIndex = () => {
 export function paintTaskCard(c, tk, { day = state.today, idx = taskIndex(), showPath = true } = {}) {
   c.t = tk;
   const done = isTaskDone(tk), sc = stepCount(tk.id), path = showPath ? taskPath(tk) : '';
-  const late = !tk.day ? (tk.parent_id ? '' : 'Anytime') : tk.day < day ? `Due ${shortDay(tk.day)}` : '';
-  const sub = [late, path ? `in ${path}` : '', sc.n ? `${sc.done}/${sc.n} steps` : '', togetherCue(tk.id)].filter(Boolean).join(' • ') || (tk.parent_id ? 'Step' : 'Task');
+  const late = !tk.day ? (tk.parent_id || tk.project || sc.n ? '' : 'Anytime') : tk.day < day ? `Due ${shortDay(tk.day)}` : '';
+  const sub = [tk.day && tk.due_time ? tk.due_time : '', late, path ? `in ${path}` : '', sc.n ? `${sc.done}/${sc.n} steps` : '', togetherCue(tk.id)].filter(Boolean).join(' • ') || (tk.parent_id ? 'Step' : 'Task');
   c.set({ color: hex(tk.color), icon: tk.icon, name: tk.title, sub, done });
   c.tr.set(done, sc.n > 0, taskProgress(tk.id, idx), hex(tk.color));
   return done;

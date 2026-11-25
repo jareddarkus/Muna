@@ -25,6 +25,7 @@ export const state = {
   today: todayStr(),
   viewDay: todayStr(), // the day shown on the Today screen
   taskDay: todayStr(), // the day shown on the Tasks screen
+  tasksTab: 'day', // which of the three Tasks tabs is open: 'day' | 'anytime' | 'projects'
   reminders: new Map(), // habit id -> 'HH:MM' (mine)
 };
 
@@ -63,6 +64,7 @@ export function setTaskDay(d) {
   emit();
 }
 export const shiftTaskDay = (n) => setTaskDay(addDays(state.taskDay, n));
+export function setTasksTab(t) { if (state.tasksTab !== t) { state.tasksTab = t; emit(); } }
 
 // ───────────── tasks ─────────────
 export const taskList = () => [...state.tasks.values()].sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id < b.id ? -1 : 1));
@@ -80,7 +82,8 @@ export const effDay = (t) => t.day || (t.done_at ? localDay(t.done_at) : null);
  */
 export function taskSections(day) {
   const all = taskList(), today = state.today;
-  const due = all.filter((t) => t.day === day || (!t.day && day !== today && t.done_at && localDay(t.done_at) === day));
+  const byTime = (x, y) => (x.due_time || '99:99') < (y.due_time || '99:99') ? -1 : (x.due_time || '99:99') > (y.due_time || '99:99') ? 1 : 0; // timed tasks first, in time order (stable)
+  const due = all.filter((t) => t.day === day || (!t.day && day !== today && t.done_at && localDay(t.done_at) === day)).sort(byTime);
   if (day !== today) return { due, carried: [] };
   const doneToday = (t) => t.done_at && localDay(t.done_at) === today;
   const carried = all.filter((t) => (t.day ? t.day < today : !t.parent_id) && (!t.done_at || doneToday(t)))
@@ -88,6 +91,12 @@ export function taskSections(day) {
   return { due, carried };
 }
 export const tasksOn = (day) => taskSections(day).due;
+const hasSteps = (id) => { for (const t of state.tasks.values()) if (t.parent_id === id) return true; return false; };
+const keepVisible = (t) => !t.done_at || localDay(t.done_at) === state.today; // unfinished, or finished today (it leaves tomorrow)
+/** Anytime tab: top-level tasks with no day (and no steps of their own). */
+export const anytimeTasks = () => taskList().filter((t) => !t.parent_id && !t.day && !t.project && !hasSteps(t.id) && keepVisible(t));
+/** Projects tab: top-level tasks marked as a project, or that have steps. */
+export const projectTasks = () => taskList().filter((t) => !t.parent_id && (t.project || hasSteps(t.id)) && keepVisible(t));
 /** Every id below a task (so a task can never be moved into itself). */
 export function descendantIds(id) {
   const out = new Set(), walk = (x) => { for (const c of state.tasks.values()) if (c.parent_id === x && !out.has(c.id)) { out.add(c.id); walk(c.id); } };
@@ -427,7 +436,7 @@ export async function duplicateTask(id, { parentId, day } = {}) {
   const rows = [];
   const copy = (src, parent, isRoot) => {
     const row = { id: uuid(), owner_id: state.me.id, parent_id: parent, title: isRoot ? `${src.title} copy`.slice(0, 80) : src.title, icon: src.icon, color: src.color || 'purple', description: src.description || '',
-      day: isRoot && day !== undefined ? day : src.day, done_at: null, created_at: new Date(now + n++).toISOString() };
+      day: isRoot && day !== undefined ? day : src.day, due_time: src.due_time ?? null, project: !!src.project, done_at: null, created_at: new Date(now + n++).toISOString() };
     rows.push(row);
     childrenOf(src.id).forEach((c) => copy(c, row.id, false));
   };
