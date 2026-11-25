@@ -1,7 +1,16 @@
 // Bump VERSION and add an entry on top of CHANGELOG with every release.
-export const VERSION = '2.18.1';
+export const VERSION = '2.19';
 
 export const CHANGELOG = [
+  {
+    version: '2.19',
+    date: 'November 25, 2026',
+    items: [
+      'The Tasks tab now has three tabs inside: Day, Anytime and Projects.',
+      'Day: a week strip (Monday to Sunday) with arrows to change week, and tasks can have a time, shown on the card and in time order.',
+      'Anytime: tasks with no day. Projects: big tasks with steps, with their progress ring and percentage. They are normal tasks: turn on "Project" in the editor, or just add steps.',
+    ],
+  },
   {
     version: '2.18.1',
     date: 'November 24, 2026',
