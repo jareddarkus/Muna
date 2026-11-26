@@ -1,9 +1,9 @@
 // "Together" strip on a habit / task screen: everyone in it and how far they are today (count or time).
-import { h } from './util.js';
+import { h, toast, tap } from './util.js';
 import { icon } from './icons.js';
 import { avatar, ring } from './ui.js';
 import { hex } from './colors.js';
-import { state, itemPeople, profileOf } from './store.js';
+import { state, itemPeople, nudgePerson, profileOf } from './store.js';
 import { openTogether } from './together-panel.js';
 
 /** How far a person is today, in their own habit's unit: "2 of 5", "25 of 30 min". */
@@ -14,20 +14,30 @@ export function progressText(r) {
   return `${r.value} of ${r.target}${r.unit ? ` ${r.unit}` : ''}`;
 }
 
-/** Their progress as a small ring (a check inside once they are done); "Invited" until they accept. */
+const reminded = new Set(); // `${habit id}:${user id}` reminded during this visit (the server also limits how often)
+
+/** Their progress as a small ring. A bell inside it reminds them with one tap; a check once they are done; "Invited" until they accept. */
 function personRing(r, hb) {
   if (r.status === 'pending') return h('span', { class: 'tg-val' }, 'Invited');
   const rg = ring({ size: 44, stroke: 6, color: hex(hb?.color || 'green') });
-  const p = r.done ? 1 : r.value != null && r.target ? Math.min(1, r.value / r.target) : 0;
-  rg.set(p);
-  return h('span', { class: `tg-ring ${r.done ? 'ok' : ''}`, title: progressText(r), 'aria-label': progressText(r) }, rg.el, r.done ? h('span', { class: 'tg-check' }, icon('check', { size: 18, stroke: 3.2 })) : null);
+  rg.set(r.done ? 1 : r.value != null && r.target ? Math.min(1, r.value / r.target) : 0);
+  if (r.done || !hb) return h('span', { class: `tg-ring ${r.done ? 'ok' : ''}`, title: progressText(r), 'aria-label': progressText(r) }, rg.el, r.done ? h('span', { class: 'tg-check' }, icon('check', { size: 18, stroke: 3.2 })) : null);
+  const p = profileOf(r.user_id), key = `${hb.id}:${r.user_id}`;
+  const btn = h('button', { type: 'button', class: 'tg-ring tg-bell', 'aria-label': `Remind @${p.username}`, title: `${progressText(r)} · tap to remind`, disabled: reminded.has(key),
+    onClick: async () => {
+      tap(); btn.disabled = true;
+      try { await nudgePerson('habit', hb, r.user_id); reminded.add(key); toast(`Reminder sent to @${p.username}`); }
+      catch (e) { toast(e?.message || 'Could not send'); btn.disabled = false; }
+    } }, rg.el, h('span', { class: 'tg-check bell' }, icon('bell', { size: 20, stroke: 2 })));
+  return btn;
 }
 
 const seen = new Map(); // item id -> last list of people (so the strip is there the moment the screen opens)
 
 /** Returns an element showing the OTHER people in a shared habit / task (never you). Drawn at once from what is already known, then updated quietly. */
 export function togetherStrip(kind, id) {
-  const el = h('button', { type: 'button', class: 'together', hidden: true, 'aria-label': 'See everyone, and send a reminder', onClick: () => { const it = (kind === 'habit' ? state.habits : state.tasks).get(id); if (it) openTogether(kind, it); } });
+  const el = kind === 'habit' ? h('div', { class: 'together', hidden: true })
+    : h('button', { type: 'button', class: 'together', hidden: true, 'aria-label': 'See everyone, and send a reminder', onClick: () => { const it = state.tasks.get(id); if (it) openTogether(kind, it); } });
   if (state.demo || !state.me) return el;
   const draw = (rows) => {
     const others = (rows || []).filter((r) => r.user_id !== state.me.id);
@@ -41,7 +51,7 @@ export function togetherStrip(kind, id) {
             h('span', { class: 'tg-name' }, `@${p.username}`), personRing(r, state.habits.get(id)));
         }))
         : h('div', { class: 'avatars' }, others.map((r) => h('span', { class: `tg ${r.status === 'pending' ? 'pending' : ''}`, title: `@${profileOf(r.user_id).username}` }, avatar(profileOf(r.user_id), 38)))),
-      h('p', { class: 'hint' }, kind === 'task' ? 'Shared: everyone sees changes live' : 'Tap to remind someone'));
+      kind === 'task' ? h('p', { class: 'hint' }, 'Shared: everyone sees changes live') : null);
     el.hidden = false;
   };
   draw(state.together.get(id) || seen.get(id));
